@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Personal app that tracks standup comedy shows, alerts you weekly, prevents double-booking, and helps you book and add shows to Google Calendar"
 readme = "README.md"
 authors = [
-    { name = "georgeliu1998", email = "12277063+georgeliu1998@users.noreply.github.com" }
+    { name = "George Liu", email = "12277063+georgeliu1998@users.noreply.github.com" }
 ]
 requires-python = ">=3.13"
 dependencies = [
