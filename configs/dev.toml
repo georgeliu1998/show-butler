@@ -1,0 +1,8 @@
+# Development environment overrides.
+# Only define settings that differ from base.toml.
+
+[general]
+debug = true
+
+[logging]
+level = "DEBUG"

@@ -1,0 +1,13 @@
+# Production environment overrides.
+# Only define settings that differ from base.toml.
+
+[general]
+debug = false
+
+[logging]
+level = "INFO"
+
+# Public base URL of the deployed web UI, used for action links in the digest
+# email. Override with the actual Cloud Run service URL at deploy time.
+[web]
+base_url = "https://show-butler.example.run.app"
