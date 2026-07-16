@@ -32,5 +32,9 @@ class ConfigValidationError(ConfigError):
     """Raised when configuration fails Pydantic validation."""
 
 
-class EnvironmentError(ConfigError):
-    """Raised when the ``APP_ENV`` variable is unset or invalid."""
+class InvalidEnvironmentError(ConfigError):
+    """Raised when the ``APP_ENV`` variable is unset or invalid.
+
+    Named to avoid shadowing the built-in ``EnvironmentError`` (an alias of
+    ``OSError``).
+    """

@@ -11,7 +11,7 @@ from show_butler.config.models import BudgetConfig, EmailConfig, LLMConfig, Logg
 from show_butler.exceptions.config import (
     ConfigFileError,
     ConfigValidationError,
-    EnvironmentError,
+    InvalidEnvironmentError,
 )
 
 CONFIGS_DIR = Path(__file__).resolve().parents[1] / "configs"
@@ -171,7 +171,7 @@ def test_missing_app_env_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("APP_ENV", raising=False)
     _clear_secret_env(monkeypatch)
 
-    with pytest.raises(EnvironmentError):
+    with pytest.raises(InvalidEnvironmentError):
         _load()
 
 
@@ -179,7 +179,7 @@ def test_invalid_app_env_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "staging")
     _clear_secret_env(monkeypatch)
 
-    with pytest.raises(EnvironmentError):
+    with pytest.raises(InvalidEnvironmentError):
         _load()
 
 

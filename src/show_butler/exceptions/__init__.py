@@ -5,7 +5,7 @@ from show_butler.exceptions.config import (
     ConfigError,
     ConfigFileError,
     ConfigValidationError,
-    EnvironmentError,
+    InvalidEnvironmentError,
 )
 
 __all__ = [
@@ -13,5 +13,5 @@ __all__ = [
     "ConfigError",
     "ConfigFileError",
     "ConfigValidationError",
-    "EnvironmentError",
+    "InvalidEnvironmentError",
 ]

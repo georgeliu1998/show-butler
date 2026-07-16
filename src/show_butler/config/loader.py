@@ -12,7 +12,11 @@ import tomllib
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from show_butler.exceptions.config import ConfigError, ConfigFileError, EnvironmentError
+from show_butler.exceptions.config import (
+    ConfigError,
+    ConfigFileError,
+    InvalidEnvironmentError,
+)
 from show_butler.models.enums import Environment
 
 
@@ -79,19 +83,19 @@ class ConfigLoader:
         """Read and validate the current environment from ``APP_ENV``.
 
         Raises:
-            EnvironmentError: If ``APP_ENV`` is unset or invalid.
+            InvalidEnvironmentError: If ``APP_ENV`` is unset or invalid.
         """
         env_str = os.getenv("APP_ENV", "").lower()
         if not env_str:
             valid_values = ", ".join([e.value for e in Environment])
-            raise EnvironmentError(
+            raise InvalidEnvironmentError(
                 f"APP_ENV environment variable is not set. Valid values: {valid_values}"
             )
 
         try:
             return Environment.from_string(env_str)
         except ValueError as e:
-            raise EnvironmentError(str(e))
+            raise InvalidEnvironmentError(str(e))
 
     def load_toml_file(self, file_path: Path) -> Dict[str, Any]:
         """Load and parse a single TOML file.
@@ -188,7 +192,7 @@ class ConfigLoader:
 
             return self.load_secrets(config)
 
-        except (ConfigError, ConfigFileError, EnvironmentError):
+        except (ConfigError, ConfigFileError, InvalidEnvironmentError):
             raise
         except Exception as e:
             raise ConfigError(f"Unexpected error loading configuration: {e}")
