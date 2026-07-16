@@ -335,6 +335,15 @@ class GCalConfig(_StrictModel):
         default=None, description="OAuth client secret (from env var)"
     )
 
+    @model_validator(mode="after")
+    def validate_secrets(self) -> "GCalConfig":
+        """Require OAuth credentials in production, mirroring other secrets."""
+        if _is_prod() and not (self.client_id and self.client_secret):
+            raise ValueError(
+                "GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET are required in production."
+            )
+        return self
+
 
 class FirestoreConfig(_StrictModel):
     """Firestore state backend settings.

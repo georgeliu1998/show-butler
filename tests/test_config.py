@@ -209,6 +209,16 @@ def test_prod_requires_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
         _load()
 
 
+def test_prod_requires_gcal_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "prod")
+    for key, value in PROD_SECRETS.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.delenv("GOOGLE_OAUTH_CLIENT_ID", raising=False)
+
+    with pytest.raises(ConfigValidationError):
+        _load()
+
+
 def test_unknown_toml_section_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _copy_configs(tmp_path)
     with open(tmp_path / "base.toml", "a") as f:
