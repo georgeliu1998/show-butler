@@ -46,6 +46,11 @@ def _is_prod() -> bool:
         return False
 
 
+def _missing_secret(value: Optional[str]) -> bool:
+    """Return whether a secret is absent or blank (whitespace-only counts)."""
+    return not (value and value.strip())
+
+
 def _validate_provider_name(v: str) -> str:
     """Validate and normalize an LLM provider name to lowercase."""
     if v.lower() not in _VALID_PROVIDERS:
@@ -228,7 +233,7 @@ class LLMConfig(_StrictModel):
         In dev the key comes from ``.env`` when actually calling the LLM, so its
         absence should not block loading config for tests or offline work.
         """
-        if _is_prod() and not v:
+        if _is_prod() and _missing_secret(v):
             provider = info.data.get("provider", "unknown")
             raise ValueError(
                 f"API key is required for the {provider} provider in production. "
@@ -320,7 +325,9 @@ class EmailConfig(_StrictModel):
         if not self.recipient:
             self.recipient = self.sender_address
 
-        if _is_prod() and not (self.sender_address and self.app_password):
+        if _is_prod() and (
+            _missing_secret(self.sender_address) or _missing_secret(self.app_password)
+        ):
             raise ValueError("GMAIL_ADDRESS and GMAIL_APP_PASSWORD are required in production.")
         return self
 
@@ -346,7 +353,7 @@ class GCalConfig(_StrictModel):
     @model_validator(mode="after")
     def validate_secrets(self) -> "GCalConfig":
         """Require OAuth credentials in production, mirroring other secrets."""
-        if _is_prod() and not (self.client_id and self.client_secret):
+        if _is_prod() and (_missing_secret(self.client_id) or _missing_secret(self.client_secret)):
             raise ValueError(
                 "GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET are required in production."
             )
@@ -375,7 +382,7 @@ class FirestoreConfig(_StrictModel):
     @model_validator(mode="after")
     def validate_project(self) -> "FirestoreConfig":
         """Require a project ID in production, where Firestore is the backend."""
-        if _is_prod() and not self.project_id:
+        if _is_prod() and _missing_secret(self.project_id):
             raise ValueError("GCP_PROJECT_ID is required in production.")
         return self
 
@@ -397,7 +404,7 @@ class WebConfig(_StrictModel):
     @model_validator(mode="after")
     def validate_token(self) -> "WebConfig":
         """Require an access token in production so the UI isn't left open."""
-        if _is_prod() and not self.token:
+        if _is_prod() and _missing_secret(self.token):
             raise ValueError("WEB_UI_TOKEN is required in production.")
         return self
 

@@ -95,7 +95,7 @@ class ConfigLoader:
         try:
             return Environment.from_string(env_str)
         except ValueError as e:
-            raise InvalidEnvironmentError(str(e))
+            raise InvalidEnvironmentError(str(e)) from e
 
     def load_toml_file(self, file_path: Path) -> Dict[str, Any]:
         """Load and parse a single TOML file.
@@ -114,7 +114,7 @@ class ConfigLoader:
             raise ConfigFileError(
                 f"Failed to parse configuration file {file_path}: {e}",
                 config_path=str(file_path),
-            )
+            ) from e
 
     def merge_configs(self, base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
         """Recursively merge ``override`` on top of ``base``.
@@ -195,4 +195,4 @@ class ConfigLoader:
         except (ConfigError, ConfigFileError, InvalidEnvironmentError):
             raise
         except Exception as e:
-            raise ConfigError(f"Unexpected error loading configuration: {e}")
+            raise ConfigError(f"Unexpected error loading configuration: {e}") from e

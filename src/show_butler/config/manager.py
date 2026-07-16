@@ -55,11 +55,11 @@ class ConfigManager:
                 raw_config = loader.load_raw_config()
                 self._config = AppConfig(**raw_config)
             except ValidationError as e:
-                raise ConfigValidationError(f"Configuration validation failed: {e}")
+                raise ConfigValidationError(f"Configuration validation failed: {e}") from e
             except ConfigError:
                 raise
             except Exception as e:
-                raise ConfigError(f"Unexpected error during configuration loading: {e}")
+                raise ConfigError(f"Unexpected error during configuration loading: {e}") from e
 
         return self._config
 
