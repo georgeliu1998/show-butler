@@ -34,8 +34,16 @@ _VALID_MODELS_BY_PROVIDER: Dict[str, set] = {
 
 
 def _is_prod() -> bool:
-    """Return whether the app is running in the production environment."""
-    return os.getenv("APP_ENV", "").lower() in (Environment.PROD.value, "production")
+    """Return whether the app is running in the production environment.
+
+    Reuses ``Environment.from_string`` so the parse (lowercasing, trimming,
+    short/full forms) stays identical to ``ConfigLoader.get_environment`` and the
+    two checks can't diverge (e.g. on a whitespace-padded ``APP_ENV``).
+    """
+    try:
+        return Environment.from_string(os.getenv("APP_ENV", "")) is Environment.PROD
+    except ValueError:
+        return False
 
 
 def _validate_provider_name(v: str) -> str:

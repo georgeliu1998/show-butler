@@ -209,6 +209,15 @@ def test_prod_requires_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
         _load()
 
 
+def test_whitespace_padded_prod_enforces_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A whitespace-padded APP_ENV is treated as prod by both the loader and _is_prod."""
+    monkeypatch.setenv("APP_ENV", " prod ")
+    _clear_secret_env(monkeypatch)
+
+    with pytest.raises(ConfigValidationError):
+        _load()
+
+
 def test_prod_requires_gcal_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "prod")
     for key, value in PROD_SECRETS.items():
