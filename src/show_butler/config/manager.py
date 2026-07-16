@@ -31,8 +31,14 @@ class ConfigManager:
         self._loader: Optional[ConfigLoader] = None
 
     def _get_loader(self) -> ConfigLoader:
-        """Return a cached loader, recreating it if the directory changed."""
-        if self._loader is None or self._loader.config_dir != self.config_dir:
+        """Return the cached loader, creating it on first use.
+
+        ``config_dir`` only changes via ``__init__`` or ``reload``; both leave
+        ``_loader`` unset, so a simple ``is None`` check is sufficient and avoids
+        comparing an unresolved ``config_dir`` (often ``None``) against the
+        loader's always-resolved absolute path.
+        """
+        if self._loader is None:
             self._loader = ConfigLoader(config_dir=self.config_dir)
         return self._loader
 

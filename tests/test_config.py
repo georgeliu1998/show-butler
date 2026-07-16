@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from show_butler.config import AppConfig, ConfigLoader, ConfigManager
+from show_butler.config import config as config_proxy
 from show_butler.config.models import BudgetConfig, EmailConfig, LLMConfig, LoggingConfig
 from show_butler.exceptions.config import (
     ConfigFileError,
@@ -35,6 +36,12 @@ def _clear_secret_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure no secret env vars leak in from the host environment."""
     for key in PROD_SECRETS:
         monkeypatch.delenv(key, raising=False)
+
+
+def _copy_configs(dest: Path) -> None:
+    """Copy base.toml + dev.toml into a fresh directory (unique singleton key)."""
+    for name in ("base.toml", "dev.toml"):
+        shutil.copy(CONFIGS_DIR / name, dest / name)
 
 
 # --- Loading & merging ---------------------------------------------------------
@@ -95,6 +102,38 @@ def test_venue_home_market_flag(monkeypatch: pytest.MonkeyPatch) -> None:
 
     home_venues = {v.name for v in cfg.venues if v.home_market}
     assert home_venues == {"Houston Improv", "Punch Line Houston", "The Secret Group"}
+
+
+# --- Caching contract ----------------------------------------------------------
+
+
+def test_config_manager_caches_across_construction(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Reconstructing ConfigManager returns the same cached, non-reloaded config."""
+    _copy_configs(tmp_path)
+    monkeypatch.setenv("APP_ENV", "dev")
+    _clear_secret_env(monkeypatch)
+
+    m1 = ConfigManager(config_dir=tmp_path)
+    m2 = ConfigManager(config_dir=tmp_path)
+    assert m1 is m2
+
+    c1 = m1.load()
+    c2 = ConfigManager(config_dir=tmp_path).load()
+    assert c1 is c2
+
+
+def test_lazy_proxy_caches(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The `config` proxy returns the same cached AppConfig across accesses."""
+    _copy_configs(tmp_path)
+    monkeypatch.setenv("APP_ENV", "dev")
+    _clear_secret_env(monkeypatch)
+
+    config_proxy.reload(config_dir=tmp_path)
+
+    assert config_proxy.general is config_proxy.general
+    assert config_proxy.home is config_proxy.home
 
 
 # --- Secret injection ----------------------------------------------------------
