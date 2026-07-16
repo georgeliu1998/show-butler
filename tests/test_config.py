@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from show_butler.config import AppConfig, ConfigLoader, ConfigManager
 from show_butler.config import config as config_proxy
@@ -208,6 +209,17 @@ def test_prod_requires_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
         _load()
 
 
+def test_unknown_toml_section_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _copy_configs(tmp_path)
+    with open(tmp_path / "base.toml", "a") as f:
+        f.write('\n[typo_section]\nfoo = "bar"\n')
+    monkeypatch.setenv("APP_ENV", "dev")
+    _clear_secret_env(monkeypatch)
+
+    with pytest.raises(ConfigValidationError):
+        _load(tmp_path)
+
+
 # --- Model-level validation ----------------------------------------------------
 
 
@@ -257,3 +269,8 @@ def test_llm_allows_test_model_names() -> None:
 def test_email_recipient_defaults_without_env() -> None:
     email = EmailConfig(sender_address="a@b.com")
     assert email.recipient == "a@b.com"
+
+
+def test_model_rejects_unknown_key() -> None:
+    with pytest.raises(ValidationError):
+        BudgetConfig(yearly_amount=100.0, warning_threshhold=0.9)

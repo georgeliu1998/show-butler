@@ -9,7 +9,7 @@ except secrets, which the loader injects from environment variables.
 import os
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from show_butler.models.enums import Environment
 
@@ -64,7 +64,19 @@ def _validate_model_name(v: str, provider: str) -> str:
     return v
 
 
-class GeneralConfig(BaseModel):
+class _StrictModel(BaseModel):
+    """Base for config models that rejects unknown keys.
+
+    Pydantic v2 defaults to ``extra="ignore"``, which would silently drop a
+    typo'd TOML key (e.g. ``warning_threshhold``). Forbidding extras turns such
+    mistakes into loud validation errors, which is the point of a validated
+    config layer.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GeneralConfig(_StrictModel):
     """Application metadata and general settings."""
 
     name: str = Field(..., description="Application name")
@@ -73,7 +85,7 @@ class GeneralConfig(BaseModel):
     debug: bool = Field(default=False, description="Enable debug mode")
 
 
-class LoggingConfig(BaseModel):
+class LoggingConfig(_StrictModel):
     """Logging configuration settings."""
 
     level: str = Field(default="INFO", description="Logging level")
@@ -92,14 +104,14 @@ class LoggingConfig(BaseModel):
         return v.upper()
 
 
-class HomeConfig(BaseModel):
+class HomeConfig(_StrictModel):
     """The user's home market, used to flag "in town" versus "in state" shows."""
 
     city: str = Field(..., description="Home city (e.g. Houston)")
     state: str = Field(..., description="Home state (e.g. Texas)")
 
 
-class ComedianConfig(BaseModel):
+class ComedianConfig(_StrictModel):
     """A tracked favorite comedian.
 
     ``aliases`` capture spelling variants and stage names so fuzzy matching can
@@ -114,7 +126,7 @@ class ComedianConfig(BaseModel):
     priority: int = Field(default=0, ge=0, description="Ranking weight; higher is more important")
 
 
-class VenueConfig(BaseModel):
+class VenueConfig(_StrictModel):
     """A monitored venue and the scraper that knows how to read its site.
 
     ``scraper_id`` links the venue to a source implementation in ``src/sources``.
@@ -132,14 +144,14 @@ class VenueConfig(BaseModel):
     )
 
 
-class ScheduleConfig(BaseModel):
+class ScheduleConfig(_StrictModel):
     """When the weekly check runs (used by Cloud Scheduler wiring)."""
 
     timezone: str = Field(default="America/Chicago", description="IANA timezone for the schedule")
     cron: str = Field(default="0 9 * * 1", description="Cron expression for the weekly run")
 
 
-class MatchingConfig(BaseModel):
+class MatchingConfig(_StrictModel):
     """Fuzzy name-matching thresholds for identifying favorite comedians."""
 
     fuzzy_threshold: int = Field(
@@ -150,7 +162,7 @@ class MatchingConfig(BaseModel):
     )
 
 
-class RecommendationConfig(BaseModel):
+class RecommendationConfig(_StrictModel):
     """Rules for the once-a-year and anti-double-booking recommendation engine."""
 
     rebook_after_days: int = Field(
@@ -160,7 +172,7 @@ class RecommendationConfig(BaseModel):
     )
 
 
-class DiscoveryConfig(BaseModel):
+class DiscoveryConfig(_StrictModel):
     """Thresholds for LLM-backed new-comedian discovery.
 
     The LLM model/provider itself lives under ``agent_tasks.discovery``; this
@@ -177,7 +189,7 @@ class DiscoveryConfig(BaseModel):
     )
 
 
-class LLMConfig(BaseModel):
+class LLMConfig(_StrictModel):
     """Provider, model, and sampling settings for a single LLM task."""
 
     provider: str = Field(..., description="LLM provider")
@@ -217,7 +229,7 @@ class LLMConfig(BaseModel):
         return v
 
 
-class AgentTasksConfig(BaseModel):
+class AgentTasksConfig(_StrictModel):
     """Per-task LLM configuration.
 
     Only the discovery task uses an LLM in v1; more tasks can be added here as
@@ -227,7 +239,7 @@ class AgentTasksConfig(BaseModel):
     discovery: LLMConfig = Field(..., description="LLM config for new-comedian discovery")
 
 
-class RetryConfig(BaseModel):
+class RetryConfig(_StrictModel):
     """Same-provider retry/backoff shape for LLM calls."""
 
     max_attempts: int = Field(
@@ -238,7 +250,7 @@ class RetryConfig(BaseModel):
     )
 
 
-class LLMSettingsConfig(BaseModel):
+class LLMSettingsConfig(_StrictModel):
     """Global (task-independent) LLM settings."""
 
     retry: RetryConfig = Field(
@@ -246,7 +258,7 @@ class LLMSettingsConfig(BaseModel):
     )
 
 
-class BudgetConfig(BaseModel):
+class BudgetConfig(_StrictModel):
     """Yearly ticket-spend budget and the warning threshold for alerts.
 
     Spend is tracked per calendar year against ``yearly_amount``; an
@@ -273,7 +285,7 @@ class BudgetConfig(BaseModel):
         return v
 
 
-class EmailConfig(BaseModel):
+class EmailConfig(_StrictModel):
     """Gmail SMTP settings for the weekly digest email.
 
     ``sender_address`` and ``app_password`` are secrets injected from the
@@ -305,7 +317,7 @@ class EmailConfig(BaseModel):
         return self
 
 
-class GCalConfig(BaseModel):
+class GCalConfig(_StrictModel):
     """Google Calendar OAuth settings for creating invites on booking.
 
     ``client_id``/``client_secret`` are secrets injected from the environment
@@ -324,7 +336,7 @@ class GCalConfig(BaseModel):
     )
 
 
-class FirestoreConfig(BaseModel):
+class FirestoreConfig(_StrictModel):
     """Firestore state backend settings.
 
     ``project_id`` is injected from ``GCP_PROJECT_ID``. Collection names are
@@ -351,7 +363,7 @@ class FirestoreConfig(BaseModel):
         return self
 
 
-class WebConfig(BaseModel):
+class WebConfig(_StrictModel):
     """Web UI settings.
 
     ``base_url`` is used to build action links in the digest email; ``token`` is
@@ -373,7 +385,7 @@ class WebConfig(BaseModel):
         return self
 
 
-class AppConfig(BaseModel):
+class AppConfig(_StrictModel):
     """Root configuration model aggregating every section."""
 
     general: GeneralConfig = Field(..., description="General application configuration")
