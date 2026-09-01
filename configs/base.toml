@@ -1,0 +1,176 @@
+# Base configuration for Show Butler.
+# Contains all default values and the complete configuration structure.
+# Environment-specific files (dev.toml, prod.toml) override these defaults;
+# secrets are injected from environment variables (see .env.example).
+
+[general]
+name = "show-butler"
+tagline = "Weekly standup comedy show tracker, digest, and booking helper"
+version = "0.1.0"
+debug = false
+
+[logging]
+level = "INFO"
+format = "%(asctime)s %(name)s [%(levelname)s] %(message)s"
+
+# Home market: used to flag "in town" versus "in state" shows.
+[home]
+city = "Houston"
+state = "Texas"
+
+# Tracked favorite comedians. `aliases` catch spelling/stage-name variants for
+# fuzzy matching; `priority` (higher wins) breaks ties among same-week shows.
+[[comedians]]
+name = "Rob Schneider"
+aliases = []
+priority = 0
+
+[[comedians]]
+name = "Tyler Fischer"
+aliases = []
+priority = 0
+
+[[comedians]]
+name = "Jimmy Dore"
+aliases = []
+priority = 0
+
+[[comedians]]
+name = "Russell Peters"
+aliases = []
+priority = 0
+
+[[comedians]]
+name = "Tim Dillon"
+aliases = []
+priority = 0
+
+[[comedians]]
+name = "Jim Gaffigan"
+aliases = []
+priority = 0
+
+[[comedians]]
+name = "Jason Cheny"
+aliases = ["Jason Cheney"]
+priority = 0
+
+[[comedians]]
+name = "Jim Breuer"
+aliases = []
+priority = 0
+
+# Monitored venues. `scraper_id` links each venue to a source scraper in
+# src/sources. Home-market venues are in Houston; the rest cover in-state (TX).
+[[venues]]
+name = "Houston Improv"
+city = "Houston"
+state = "Texas"
+url = "https://improv.com/houston/"
+scraper_id = "houston_improv"
+home_market = true
+
+[[venues]]
+name = "Punch Line Houston"
+city = "Houston"
+state = "Texas"
+url = "https://www.punchlinecomedyclub.com/"
+scraper_id = "punchline_houston"
+home_market = true
+
+[[venues]]
+name = "The Secret Group"
+city = "Houston"
+state = "Texas"
+url = "https://thesecretgroup.org/"
+scraper_id = "secret_group"
+home_market = true
+
+[[venues]]
+name = "Addison Improv"
+city = "Addison"
+state = "Texas"
+url = "https://improv.com/addison/"
+scraper_id = "addison_improv"
+home_market = false
+
+[[venues]]
+name = "Cap City Comedy Club"
+city = "Austin"
+state = "Texas"
+url = "https://capcitycomedy.com/"
+scraper_id = "capcity_austin"
+home_market = false
+
+[[venues]]
+name = "Hyenas Comedy Club"
+city = "Dallas"
+state = "Texas"
+url = "https://www.improvtx.com/hyenasdallas/"
+scraper_id = "hyenas_dallas"
+home_market = false
+
+# Weekly run schedule (used by Cloud Scheduler wiring). Defaults to Monday 9am.
+[schedule]
+timezone = "America/Chicago"
+cron = "0 9 * * 1"
+
+# Fuzzy name-matching threshold (rapidfuzz score 0-100) to treat a scraped
+# name as one of the favorites above.
+[matching]
+fuzzy_threshold = 85
+
+# Recommendation rule: only recommend a comedian not watched/booked within
+# this many days (once-a-year anti-double-booking default).
+[recommendation]
+rebook_after_days = 365
+
+# New-comedian discovery thresholds (the LLM model lives in agent_tasks.discovery).
+[discovery]
+enabled = true
+top_n = 3
+min_score = 0.6
+
+# LLM configuration for new-comedian discovery. Targets Google AI Studio's free
+# tier; the API key is injected from GOOGLE_API_KEY.
+[agent_tasks.discovery]
+provider = "google"
+model = "gemini-2.5-flash"
+temperature = 0.4
+max_tokens = 2048
+
+# Global LLM call-resilience defaults (same-provider retry/backoff).
+[llm.retry]
+max_attempts = 3
+wait_exponential_jitter = true
+
+# Yearly ticket budget. Year-to-date spend is compared against this; an
+# approaching-budget alert fires at warning_threshold (fraction of budget).
+[budget]
+yearly_amount = 500.0
+currency = "USD"
+warning_threshold = 0.8
+
+# Gmail SMTP for the weekly digest. sender_address/app_password come from
+# GMAIL_ADDRESS/GMAIL_APP_PASSWORD; recipient defaults to the sender.
+[email]
+smtp_host = "smtp.gmail.com"
+smtp_port = 587
+
+# Google Calendar. client_id/client_secret come from GOOGLE_OAUTH_CLIENT_ID and
+# GOOGLE_OAUTH_CLIENT_SECRET.
+[gcal]
+calendar_id = "primary"
+token_path = "token.json"
+scopes = ["https://www.googleapis.com/auth/calendar.events"]
+
+# Firestore state backend. project_id comes from GCP_PROJECT_ID.
+[firestore]
+database = "(default)"
+seen_shows_collection = "seen_shows"
+watch_history_collection = "watch_history"
+bookings_collection = "bookings"
+
+# Web UI. token (shared access secret) comes from WEB_UI_TOKEN.
+[web]
+base_url = "http://localhost:8000"
