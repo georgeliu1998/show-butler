@@ -3,6 +3,13 @@
 from enum import Enum
 
 
+class BookingStatus(Enum):
+    """State of a booking the user made for a show."""
+
+    BOOKED = "booked"
+    CANCELLED = "cancelled"
+
+
 class Environment(Enum):
     """Application deployment environments.
 

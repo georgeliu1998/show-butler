@@ -1,0 +1,157 @@
+"""Core domain models for Show Butler.
+
+These are the objects that flow through the app: sources produce ``Show``
+records, matching filters them against tracked ``Performer`` entries, and the
+web UI records ``WatchRecord`` and ``Booking`` entries as the user marks shows
+watched or booked.
+
+Naming is deliberately performer/show-neutral rather than comedy-specific, so
+the same models can cover other kinds of live entertainment later. The config
+layer stays comedy-flavored because it is the user-facing input for v1.
+
+Datetimes are timezone-aware and normalized to UTC so comparisons across
+sources (and against "now") can never mix naive and aware values.
+"""
+
+import hashlib
+import re
+from datetime import date, datetime, timezone
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from show_butler.models.enums import BookingStatus
+
+_WHITESPACE = re.compile(r"\s+")
+
+
+def _normalize_key_part(value: str) -> str:
+    """Collapse whitespace and case so a key ignores cosmetic differences."""
+    return _WHITESPACE.sub(" ", value).strip().casefold()
+
+
+def _to_utc(value: datetime) -> datetime:
+    """Convert an aware datetime to UTC, rejecting naive ones."""
+    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+        raise ValueError("Datetime must be timezone-aware")
+    return value.astimezone(timezone.utc)
+
+
+def _now_utc() -> datetime:
+    """Return the current UTC time."""
+    return datetime.now(timezone.utc)
+
+
+class _DomainModel(BaseModel):
+    """Base for domain models that rejects unknown keys.
+
+    Records round-trip through storage as plain dicts, so an unexpected key
+    usually means a schema drift or a typo; failing loudly beats silently
+    dropping data.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class Performer(_DomainModel):
+    """A tracked act the user follows.
+
+    ``aliases`` carry spelling variants and stage names so fuzzy matching can
+    recognize the same person across sources. ``priority`` (higher wins) ranks
+    recommendations when several tracked performers play the same week.
+    """
+
+    name: str = Field(..., min_length=1, description="Canonical performer name")
+    aliases: List[str] = Field(
+        default_factory=list, description="Alternate spellings / stage names"
+    )
+    priority: int = Field(default=0, ge=0, description="Ranking weight; higher is more important")
+
+
+class Venue(_DomainModel):
+    """A monitored venue and the source implementation that reads its site."""
+
+    name: str = Field(..., min_length=1, description="Venue display name")
+    city: str = Field(..., description="Venue city")
+    state: str = Field(..., description="Venue state")
+    url: str = Field(..., description="Venue shows/calendar page URL")
+    scraper_id: str = Field(..., description="Identifier of the source scraper for this venue")
+
+
+class Show(_DomainModel):
+    """A single performance found by a source.
+
+    ``id`` is a stable digest of the performer, venue, and start time, so the
+    same show scraped in different weeks (or by two sources) resolves to one
+    record; storage keys records by it rather than storing it as a field.
+    Venue city/state are copied onto the show because a show is what gets
+    grouped, filtered, and emailed - not the venue.
+    """
+
+    performer: str = Field(..., min_length=1, description="Performer name as listed by the source")
+    venue: str = Field(..., min_length=1, description="Venue name")
+    city: str = Field(..., description="Venue city")
+    state: str = Field(..., description="Venue state")
+    start_dt: datetime = Field(..., description="Show start time (timezone-aware, stored as UTC)")
+    ticket_url: Optional[str] = Field(default=None, description="Direct link to buy tickets")
+    source: str = Field(..., description="Identifier of the source that produced this show")
+    first_seen: datetime = Field(
+        default_factory=_now_utc, description="When the app first saw this show"
+    )
+
+    @field_validator("start_dt", "first_seen")
+    @classmethod
+    def normalize_datetime(cls, v: datetime) -> datetime:
+        """Require timezone-aware datetimes and store them as UTC."""
+        return _to_utc(v)
+
+    @property
+    def id(self) -> str:
+        """Return the stable dedupe key for this show.
+
+        Minute precision keeps a club's early and late show on the same night
+        distinct while tolerating seconds-level noise from a source.
+        """
+        key = "|".join(
+            (
+                _normalize_key_part(self.performer),
+                _normalize_key_part(self.venue),
+                self.start_dt.strftime("%Y-%m-%dT%H:%M"),
+            )
+        )
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+class WatchRecord(_DomainModel):
+    """A show the user attended, used by the once-a-year recommendation rule."""
+
+    performer: str = Field(..., min_length=1, description="Performer the user watched")
+    watched_date: date = Field(..., description="Date the user attended")
+    show_id: Optional[str] = Field(
+        default=None, description="Stable ID of the show, when it came from a tracked show"
+    )
+
+
+class Booking(_DomainModel):
+    """A ticket the user bought, used for anti-double-booking and budget tracking."""
+
+    show_id: str = Field(..., min_length=1, description="Stable ID of the booked show")
+    performer: str = Field(..., min_length=1, description="Performer being seen")
+    booked_date: date = Field(..., description="Date the ticket was purchased")
+    cost: float = Field(..., ge=0, description="Ticket cost")
+    currency: str = Field(default="USD", description="ISO 4217 currency code")
+    status: BookingStatus = Field(
+        default=BookingStatus.BOOKED, description="Current state of the booking"
+    )
+    gcal_event_id: Optional[str] = Field(
+        default=None, description="Google Calendar event created for this booking"
+    )
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        """Normalize and sanity-check the currency code."""
+        v = v.upper()
+        if len(v) != 3 or not v.isalpha():
+            raise ValueError("Currency must be a 3-letter ISO 4217 code (e.g. USD)")
+        return v
