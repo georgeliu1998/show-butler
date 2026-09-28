@@ -43,14 +43,19 @@ def _now_utc() -> datetime:
 
 
 class _DomainModel(BaseModel):
-    """Base for domain models that rejects unknown keys.
+    """Base for domain models that rejects unknown keys and blank strings.
 
     Records round-trip through storage as plain dicts, so an unexpected key
     usually means a schema drift or a typo; failing loudly beats silently
     dropping data.
+
+    Strings are stripped on the way in, which happens before length checks, so
+    ``min_length=1`` rejects whitespace-only input. A scraper that picks up an
+    empty text node fails validation instead of yielding a record with a blank
+    performer name.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
 class Performer(_DomainModel):

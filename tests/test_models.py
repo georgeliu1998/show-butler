@@ -49,6 +49,23 @@ def test_models_reject_unknown_fields() -> None:
         Performer(name="Tim Dillon", nickname="The Tim Dillon Show")
 
 
+@pytest.mark.parametrize("blank", ["", "   ", "\n  \t"])
+def test_names_reject_blank_strings(blank: str) -> None:
+    with pytest.raises(ValidationError):
+        Performer(name=blank)
+
+    with pytest.raises(ValidationError):
+        _show(performer=blank)
+
+    with pytest.raises(ValidationError):
+        _show(venue=blank)
+
+
+def test_names_are_stripped() -> None:
+    assert Performer(name="  Tim Dillon  ").name == "Tim Dillon"
+    assert _show(performer="  Tim Dillon\n").performer == "Tim Dillon"
+
+
 # --- Show identity -------------------------------------------------------------
 
 
