@@ -24,6 +24,18 @@ def _show(**overrides: object) -> Show:
     return Show(**fields)
 
 
+def _booking(**overrides: object) -> Booking:
+    """Build a booking with sensible defaults, overriding the fields under test."""
+    fields: dict = {
+        "show_id": "abc123",
+        "performer": "Tim Dillon",
+        "booked_date": date(2026, 9, 1),
+        "cost": 65.0,
+    }
+    fields.update(overrides)
+    return Booking(**fields)
+
+
 # --- Performer / Venue ---------------------------------------------------------
 
 
@@ -89,13 +101,49 @@ def test_show_id_distinguishes_venues() -> None:
     assert _show().id != _show(venue="The Secret Group").id
 
 
-def test_show_survives_a_serialization_round_trip() -> None:
+# --- Serialization ------------------------------------------------------------
+#
+# Storage persists ``model_dump(mode="json")``: Firestore has no date type and
+# cannot encode a plain Enum, so the JSON mode - not the Python mode - is the
+# shape these tests have to lock in.
+
+
+def test_json_dumps_hold_only_primitive_values() -> None:
+    records = (
+        _show(),
+        WatchRecord(performer="Tim Dillon", watched_date=date(2026, 3, 14)),
+        _booking(),
+    )
+
+    for record in records:
+        for field, value in record.model_dump(mode="json").items():
+            assert isinstance(value, (str, int, float, bool, type(None))), field
+
+
+def test_show_json_round_trip_preserves_id() -> None:
     show = _show()
 
-    restored = Show(**show.model_dump())
+    restored = Show.model_validate_json(show.model_dump_json())
 
     assert restored == show
     assert restored.id == show.id
+
+
+def test_booking_json_round_trip_preserves_status_currency_and_date() -> None:
+    booking = _booking(currency="cad", status=BookingStatus.CANCELLED)
+
+    restored = Booking.model_validate_json(booking.model_dump_json())
+
+    assert restored == booking
+    assert restored.status is BookingStatus.CANCELLED
+    assert restored.currency == "CAD"
+    assert restored.booked_date == date(2026, 9, 1)
+
+
+def test_watch_record_json_round_trip() -> None:
+    record = WatchRecord(performer="Tim Dillon", watched_date=date(2026, 3, 14), show_id="abc123")
+
+    assert WatchRecord.model_validate_json(record.model_dump_json()) == record
 
 
 # --- Show fields ---------------------------------------------------------------
@@ -135,12 +183,7 @@ def test_watch_record_links_to_a_show_optionally() -> None:
 
 
 def test_booking_defaults_to_booked_status() -> None:
-    booking = Booking(
-        show_id="abc123",
-        performer="Tim Dillon",
-        booked_date=date(2026, 9, 1),
-        cost=65.0,
-    )
+    booking = _booking()
 
     assert booking.status is BookingStatus.BOOKED
     assert booking.currency == "USD"
@@ -148,33 +191,14 @@ def test_booking_defaults_to_booked_status() -> None:
 
 
 def test_booking_normalizes_currency() -> None:
-    booking = Booking(
-        show_id="abc123",
-        performer="Tim Dillon",
-        booked_date=date(2026, 9, 1),
-        cost=65.0,
-        currency="usd",
-    )
-
-    assert booking.currency == "USD"
+    assert _booking(currency="usd").currency == "USD"
 
 
 def test_booking_rejects_invalid_currency() -> None:
     with pytest.raises(ValidationError):
-        Booking(
-            show_id="abc123",
-            performer="Tim Dillon",
-            booked_date=date(2026, 9, 1),
-            cost=65.0,
-            currency="dollars",
-        )
+        _booking(currency="dollars")
 
 
 def test_booking_rejects_negative_cost() -> None:
     with pytest.raises(ValidationError):
-        Booking(
-            show_id="abc123",
-            performer="Tim Dillon",
-            booked_date=date(2026, 9, 1),
-            cost=-1.0,
-        )
+        _booking(cost=-1.0)
