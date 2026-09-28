@@ -59,9 +59,12 @@ class _DomainModel(BaseModel):
     ``min_length=1`` rejects whitespace-only input. A scraper that picks up an
     empty text node fails validation instead of yielding a record with a blank
     performer name.
+
+    Assignment is validated too, so the guarantees above hold for a record the
+    storage or web layer updates in place, not only for a freshly built one.
     """
 
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, validate_assignment=True)
 
 
 class Performer(_DomainModel):

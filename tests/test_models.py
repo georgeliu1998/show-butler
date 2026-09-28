@@ -73,6 +73,16 @@ def test_names_reject_blank_strings(blank: str) -> None:
         _show(venue=blank)
 
 
+def test_assignment_is_validated() -> None:
+    show = _show()
+
+    with pytest.raises(ValidationError):
+        show.start_dt = datetime(2026, 10, 2, 19, 0)
+
+    with pytest.raises(ValidationError):
+        show.performer = "   "
+
+
 def test_names_are_stripped() -> None:
     assert Performer(name="  Tim Dillon  ").name == "Tim Dillon"
     assert _show(performer="  Tim Dillon\n").performer == "Tim Dillon"
