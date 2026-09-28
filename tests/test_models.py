@@ -60,6 +60,12 @@ def test_models_reject_unknown_fields() -> None:
     with pytest.raises(ValidationError):
         Performer(name="Tim Dillon", nickname="The Tim Dillon Show")
 
+    with pytest.raises(ValidationError):
+        _show(show_id="abc123")
+
+    with pytest.raises(ValidationError):
+        _booking(price=65.0)
+
 
 @pytest.mark.parametrize("blank", ["", "   ", "\n  \t"])
 def test_names_reject_blank_strings(blank: str) -> None:
@@ -179,9 +185,10 @@ def test_show_stores_start_time_as_utc() -> None:
     assert show.start_dt.tzinfo is timezone.utc
 
 
-def test_show_rejects_naive_datetime() -> None:
+@pytest.mark.parametrize("field", ["start_dt", "first_seen"])
+def test_show_rejects_naive_datetimes(field: str) -> None:
     with pytest.raises(ValidationError):
-        _show(start_dt=datetime(2026, 10, 2, 19, 0))
+        _show(**{field: datetime(2026, 10, 2, 19, 0)})
 
 
 def test_show_first_seen_defaults_to_now_utc() -> None:
