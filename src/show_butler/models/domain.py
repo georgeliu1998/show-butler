@@ -15,6 +15,7 @@ sources (and against "now") can never mix naive and aware values.
 
 import hashlib
 import re
+import unicodedata
 from datetime import date, datetime, timezone
 from typing import List, Optional
 
@@ -26,7 +27,12 @@ _WHITESPACE = re.compile(r"\s+")
 
 
 def _normalize_key_part(value: str) -> str:
-    """Collapse whitespace and case so a key ignores cosmetic differences."""
+    """Fold away cosmetic differences: unicode form, whitespace, and case.
+
+    NFKC matters because sources differ on how they encode accents - a decomposed
+    "Beyonce\u0301" and a composed "Beyoncé" are different strings but the same name.
+    """
+    value = unicodedata.normalize("NFKC", value)
     return _WHITESPACE.sub(" ", value).strip().casefold()
 
 
@@ -86,11 +92,10 @@ class Venue(_DomainModel):
 class Show(_DomainModel):
     """A single performance found by a source.
 
-    ``id`` is a stable digest of the performer, venue, and start time, so the
-    same show scraped in different weeks (or by two sources) resolves to one
-    record; storage keys records by it rather than storing it as a field.
-    Venue city/state are copied onto the show because a show is what gets
-    grouped, filtered, and emailed - not the venue.
+    ``id`` is a digest of the performer, venue, and start time that lets the
+    weekly run recognize a listing it has already reported (see ``id`` for the
+    exact contract). Venue city/state are copied onto the show because a show is
+    what gets grouped, filtered, and emailed - not the venue.
     """
 
     performer: str = Field(..., min_length=1, description="Performer name as listed by the source")
@@ -112,10 +117,28 @@ class Show(_DomainModel):
 
     @property
     def id(self) -> str:
-        """Return the stable dedupe key for this show.
+        """Return the exact-match dedupe key for this show.
 
-        Minute precision keeps a club's early and late show on the same night
-        distinct while tolerating seconds-level noise from a source.
+        The key is the performer name, the venue name, and the UTC start minute,
+        each folded by ``_normalize_key_part``, hashed to 16 hex characters.
+
+        What it guarantees: the same listing re-scraped by the same source in a
+        later week yields the same id, so the digest reports it once. Minute
+        precision keeps a club's early and late show on the same night distinct.
+
+        What it does not: the key is built from the raw strings a source lists,
+        so "Houston Improv" and "Improv Houston", or a listing retitled to
+        "Tim Dillon: Live", are different ids. Unifying those is the matching
+        layer's job (fuzzy name matching against tracked performers), not this
+        key's. City and state are deliberately excluded - one performer cannot
+        be in two cities in the same minute, and including the city would split
+        a show whenever two sources disagree on it (e.g. "Addison" vs "Dallas").
+
+        The id is derived rather than stored, so ``model_dump()`` omits it:
+        storage keys documents by it, and an API or template response that needs
+        it has to add it explicitly. Once stored ``show_id`` values exist, the
+        inputs, folding, and length above are fixed - changing any of them
+        orphans every stored reference.
         """
         key = "|".join(
             (

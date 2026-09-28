@@ -85,6 +85,19 @@ def test_show_id_is_stable_across_cosmetic_differences() -> None:
     assert _show().id == _show(performer="  tim   dillon ", venue="houston improv").id
 
 
+def test_show_id_ignores_unicode_normalization_form() -> None:
+    composed = _show(performer="Beyoncé")
+    decomposed = _show(performer="Beyonce\u0301")
+
+    assert composed.id == decomposed.id
+
+
+def test_show_id_ignores_seconds_level_noise() -> None:
+    noisy = datetime(2026, 10, 2, 19, 0, 47, tzinfo=CENTRAL)
+
+    assert _show().id == _show(start_dt=noisy).id
+
+
 def test_show_id_ignores_the_timezone_it_was_expressed_in() -> None:
     utc_equivalent = datetime(2026, 10, 3, 0, 0, tzinfo=timezone.utc)
 
