@@ -232,3 +232,9 @@ def test_booking_rejects_invalid_currency() -> None:
 def test_booking_rejects_negative_cost() -> None:
     with pytest.raises(ValidationError):
         _booking(cost=-1.0)
+
+
+@pytest.mark.parametrize("cost", [float("inf"), "inf", float("nan")])
+def test_booking_rejects_non_finite_cost(cost: object) -> None:
+    with pytest.raises(ValidationError):
+        _booking(cost=cost)

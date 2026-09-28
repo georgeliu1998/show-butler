@@ -169,7 +169,7 @@ class Booking(_DomainModel):
     show_id: str = Field(..., min_length=1, description="Stable ID of the booked show")
     performer: str = Field(..., min_length=1, description="Performer being seen")
     booked_date: date = Field(..., description="Date the ticket was purchased")
-    cost: float = Field(..., ge=0, description="Ticket cost")
+    cost: float = Field(..., ge=0, allow_inf_nan=False, description="Ticket cost")
     currency: str = Field(default="USD", description="ISO 4217 currency code")
     status: BookingStatus = Field(
         default=BookingStatus.BOOKED, description="Current state of the booking"
