@@ -55,16 +55,21 @@ class _DomainModel(BaseModel):
     usually means a schema drift or a typo; failing loudly beats silently
     dropping data.
 
-    Strings are stripped on the way in, which happens before length checks, so
-    ``min_length=1`` rejects whitespace-only input. A scraper that picks up an
-    empty text node fails validation instead of yielding a record with a blank
-    performer name.
+    Every string - required, optional, or inside a list - is stripped and must
+    then be non-empty, so whitespace-only input is rejected. A scraper that
+    picks up an empty text node fails validation instead of yielding a record
+    with a blank performer name; an absent optional value must be ``None``.
 
     Assignment is validated too, so the guarantees above hold for a record the
     storage or web layer updates in place, not only for a freshly built one.
     """
 
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, validate_assignment=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        str_min_length=1,
+        validate_assignment=True,
+    )
 
 
 class Performer(_DomainModel):
@@ -75,7 +80,7 @@ class Performer(_DomainModel):
     recommendations when several tracked performers play the same week.
     """
 
-    name: str = Field(..., min_length=1, description="Canonical performer name")
+    name: str = Field(..., description="Canonical performer name")
     aliases: List[str] = Field(
         default_factory=list, description="Alternate spellings / stage names"
     )
@@ -85,7 +90,7 @@ class Performer(_DomainModel):
 class Venue(_DomainModel):
     """A monitored venue and the source implementation that reads its site."""
 
-    name: str = Field(..., min_length=1, description="Venue display name")
+    name: str = Field(..., description="Venue display name")
     city: str = Field(..., description="Venue city")
     state: str = Field(..., description="Venue state")
     url: str = Field(..., description="Venue shows/calendar page URL")
@@ -101,8 +106,8 @@ class Show(_DomainModel):
     what gets grouped, filtered, and emailed - not the venue.
     """
 
-    performer: str = Field(..., min_length=1, description="Performer name as listed by the source")
-    venue: str = Field(..., min_length=1, description="Venue name")
+    performer: str = Field(..., description="Performer name as listed by the source")
+    venue: str = Field(..., description="Venue name")
     city: str = Field(..., description="Venue city")
     state: str = Field(..., description="Venue state")
     start_dt: datetime = Field(..., description="Show start time (timezone-aware, stored as UTC)")
@@ -156,7 +161,7 @@ class Show(_DomainModel):
 class WatchRecord(_DomainModel):
     """A show the user attended, used by the once-a-year recommendation rule."""
 
-    performer: str = Field(..., min_length=1, description="Performer the user watched")
+    performer: str = Field(..., description="Performer the user watched")
     watched_date: date = Field(..., description="Date the user attended")
     show_id: Optional[str] = Field(
         default=None, description="Stable ID of the show, when it came from a tracked show"
@@ -166,8 +171,8 @@ class WatchRecord(_DomainModel):
 class Booking(_DomainModel):
     """A ticket the user bought, used for anti-double-booking and budget tracking."""
 
-    show_id: str = Field(..., min_length=1, description="Stable ID of the booked show")
-    performer: str = Field(..., min_length=1, description="Performer being seen")
+    show_id: str = Field(..., description="Stable ID of the booked show")
+    performer: str = Field(..., description="Performer being seen")
     booked_date: date = Field(..., description="Date the ticket was purchased")
     cost: float = Field(..., ge=0, allow_inf_nan=False, description="Ticket cost")
     currency: str = Field(default="USD", description="ISO 4217 currency code")

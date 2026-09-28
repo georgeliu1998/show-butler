@@ -1,6 +1,8 @@
 """Tests for the Show Butler domain models."""
 
+from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
+from functools import partial
 
 import pytest
 from pydantic import ValidationError
@@ -67,16 +69,40 @@ def test_models_reject_unknown_fields() -> None:
         _booking(price=65.0)
 
 
+_performer = partial(Performer, name="Tim Dillon")
+_venue = partial(
+    Venue,
+    name="Houston Improv",
+    city="Houston",
+    state="Texas",
+    url="https://improv.com/houston/",
+    scraper_id="houston_improv",
+)
+_watch_record = partial(WatchRecord, performer="Tim Dillon", watched_date=date(2026, 3, 14))
+
+
+@pytest.mark.parametrize(
+    ("build", "field"),
+    [
+        (_performer, "name"),
+        *((_venue, f) for f in ("name", "city", "state", "url", "scraper_id")),
+        *((_show, f) for f in ("performer", "venue", "city", "state", "source", "ticket_url")),
+        (_watch_record, "performer"),
+        (_watch_record, "show_id"),
+        *((_booking, f) for f in ("show_id", "performer", "gcal_event_id")),
+    ],
+)
 @pytest.mark.parametrize("blank", ["", "   ", "\n  \t"])
-def test_names_reject_blank_strings(blank: str) -> None:
+def test_string_fields_reject_blank_values(
+    build: Callable[..., object], field: str, blank: str
+) -> None:
     with pytest.raises(ValidationError):
-        Performer(name=blank)
+        build(**{field: blank})
 
-    with pytest.raises(ValidationError):
-        _show(performer=blank)
 
+def test_aliases_reject_blank_entries() -> None:
     with pytest.raises(ValidationError):
-        _show(venue=blank)
+        Performer(name="Tim Dillon", aliases=["Timmy", "  "])
 
 
 def test_assignment_is_validated() -> None:
