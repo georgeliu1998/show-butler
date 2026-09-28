@@ -136,17 +136,19 @@ class Show(_DomainModel):
 
         What it does not: the key is built from the raw strings a source lists,
         so "Houston Improv" and "Improv Houston", or a listing retitled to
-        "Tim Dillon: Live", are different ids. Unifying those is the matching
-        layer's job (fuzzy name matching against tracked performers), not this
-        key's. City and state are deliberately excluded - one performer cannot
-        be in two cities in the same minute, and including the city would split
-        a show whenever two sources disagree on it (e.g. "Addison" vs "Dallas").
+        "Tim Dillon: Live", are different ids. Unifying listings across sources
+        is out of scope for this key. City and state are deliberately excluded -
+        one performer cannot be in two cities in the same minute, and including
+        the city would split a show whenever two sources disagree on it (e.g.
+        "Addison" vs "Dallas").
 
         The id is derived rather than stored, so ``model_dump()`` omits it:
         storage keys documents by it, and an API or template response that needs
-        it has to add it explicitly. Once stored ``show_id`` values exist, the
-        inputs, folding, and length above are fixed - changing any of them
-        orphans every stored reference.
+        it has to add it explicitly. For the same reason, reassigning
+        ``performer``, ``venue``, or ``start_dt`` changes the id, so treat those
+        fields as fixed on a record loaded from storage. Once stored ``show_id``
+        values exist, the inputs, folding, and length above are fixed - changing
+        any of them orphans every stored reference.
         """
         key = "|".join(
             (
