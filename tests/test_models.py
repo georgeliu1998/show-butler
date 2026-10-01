@@ -75,7 +75,7 @@ def test_venue_requires_timezone() -> None:
         )
 
 
-@pytest.mark.parametrize("tz", ["America/Houston", "Central", "../etc/passwd", "UTC+5"])
+@pytest.mark.parametrize("tz", ["America/Houston", "Central", "../America/Chicago", "UTC+5"])
 def test_venue_rejects_unknown_timezone(tz: str) -> None:
     with pytest.raises(ValidationError, match="Unknown IANA timezone"):
         _venue(timezone=tz)
