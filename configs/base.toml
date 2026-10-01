@@ -61,8 +61,9 @@ aliases = []
 priority = 0
 
 # Monitored venues. `scraper_id` links each venue to a source scraper in
-# src/sources. `timezone` (IANA) localizes listed times that carry no UTC
-# offset. Home-market venues are in Houston; the rest cover in-state (TX).
+# src/sources, which reads the listing at `url`. `timezone` (IANA) localizes
+# listed times that carry no UTC offset. Home-market venues are in Houston; the
+# rest cover in-state (TX).
 [[venues]]
 name = "Houston Improv"
 city = "Houston"
@@ -81,11 +82,13 @@ scraper_id = "punchline_houston"
 timezone = "America/Chicago"
 home_market = true
 
+# The club's own site loads listings client-side; its Eventbrite organizer page
+# embeds the same events as JSON.
 [[venues]]
 name = "The Secret Group"
 city = "Houston"
 state = "Texas"
-url = "https://www.thesecretgrouphtx.com/"
+url = "https://www.eventbrite.com/o/the-secret-group-20138725138"
 scraper_id = "secret_group"
 timezone = "America/Chicago"
 home_market = true
