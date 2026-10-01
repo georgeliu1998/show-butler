@@ -61,13 +61,15 @@ aliases = []
 priority = 0
 
 # Monitored venues. `scraper_id` links each venue to a source scraper in
-# src/sources. Home-market venues are in Houston; the rest cover in-state (TX).
+# src/sources. `timezone` (IANA) localizes listed times that carry no UTC
+# offset. Home-market venues are in Houston; the rest cover in-state (TX).
 [[venues]]
 name = "Houston Improv"
 city = "Houston"
 state = "Texas"
 url = "https://improvtx.com/houston/calendar/"
 scraper_id = "houston_improv"
+timezone = "America/Chicago"
 home_market = true
 
 [[venues]]
@@ -76,6 +78,7 @@ city = "Houston"
 state = "Texas"
 url = "https://www.punchlinehtx.com/shows"
 scraper_id = "punchline_houston"
+timezone = "America/Chicago"
 home_market = true
 
 [[venues]]
@@ -84,6 +87,7 @@ city = "Houston"
 state = "Texas"
 url = "https://www.thesecretgrouphtx.com/"
 scraper_id = "secret_group"
+timezone = "America/Chicago"
 home_market = true
 
 [[venues]]
@@ -92,6 +96,7 @@ city = "Addison"
 state = "Texas"
 url = "https://improvtx.com/addison/calendar/"
 scraper_id = "addison_improv"
+timezone = "America/Chicago"
 home_market = false
 
 [[venues]]
@@ -100,6 +105,7 @@ city = "Austin"
 state = "Texas"
 url = "https://capcitycomedy.com/"
 scraper_id = "capcity_austin"
+timezone = "America/Chicago"
 home_market = false
 
 [[venues]]
@@ -108,6 +114,7 @@ city = "Dallas"
 state = "Texas"
 url = "https://www.hyenascomedynightclub.com/dallas"
 scraper_id = "hyenas_dallas"
+timezone = "America/Chicago"
 home_market = false
 
 # Weekly run schedule (used by Cloud Scheduler wiring). Defaults to Monday 9am.

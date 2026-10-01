@@ -8,6 +8,7 @@ except secrets, which the loader injects from environment variables.
 
 import os
 from typing import Dict, List, Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -144,7 +145,8 @@ class VenueConfig(_StrictModel):
 
     ``scraper_id`` links the venue to a source implementation in ``src/sources``.
     ``home_market`` distinguishes in-town venues from in-state ones so the digest
-    can group them.
+    can group them. ``timezone`` is the venue's IANA zone, used to read listed
+    show times that carry no UTC offset.
     """
 
     name: str = Field(..., description="Venue display name")
@@ -152,9 +154,20 @@ class VenueConfig(_StrictModel):
     state: str = Field(..., description="Venue state")
     url: str = Field(..., description="Venue shows/calendar page URL")
     scraper_id: str = Field(..., description="Identifier of the source scraper for this venue")
+    timezone: str = Field(..., description="IANA timezone of the venue (e.g. America/Chicago)")
     home_market: bool = Field(
         default=False, description="Whether the venue is in the user's home city"
     )
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:
+        """Reject a typo'd timezone at load time rather than mid-scrape."""
+        try:
+            ZoneInfo(v)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError(f"Unknown IANA timezone: '{v}'") from None
+        return v
 
 
 class ScheduleConfig(_StrictModel):

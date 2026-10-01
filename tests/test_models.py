@@ -55,7 +55,34 @@ def test_performer_rejects_negative_priority() -> None:
 
 def test_venue_requires_scraper_id() -> None:
     with pytest.raises(ValidationError):
-        Venue(name="Houston Improv", city="Houston", state="Texas", url="https://improv.com/")
+        Venue(
+            name="Houston Improv",
+            city="Houston",
+            state="Texas",
+            url="https://improv.com/",
+            timezone="America/Chicago",
+        )
+
+
+def test_venue_requires_timezone() -> None:
+    with pytest.raises(ValidationError):
+        Venue(
+            name="Houston Improv",
+            city="Houston",
+            state="Texas",
+            url="https://improv.com/",
+            scraper_id="houston_improv",
+        )
+
+
+@pytest.mark.parametrize("tz", ["America/Houston", "Central", "../etc/passwd", "UTC+5"])
+def test_venue_rejects_unknown_timezone(tz: str) -> None:
+    with pytest.raises(ValidationError, match="Unknown IANA timezone"):
+        _venue(timezone=tz)
+
+
+def test_venue_accepts_iana_timezone() -> None:
+    assert _venue(timezone="America/Denver").timezone == "America/Denver"
 
 
 def test_models_reject_unknown_fields() -> None:
@@ -77,6 +104,7 @@ _venue = partial(
     state="Texas",
     url="https://improv.com/houston/",
     scraper_id="houston_improv",
+    timezone="America/Chicago",
 )
 _watch_record = partial(WatchRecord, performer="Tim Dillon", watched_date=date(2026, 3, 14))
 
@@ -85,7 +113,7 @@ _watch_record = partial(WatchRecord, performer="Tim Dillon", watched_date=date(2
     ("build", "field"),
     [
         (_performer, "name"),
-        *((_venue, f) for f in ("name", "city", "state", "url", "scraper_id")),
+        *((_venue, f) for f in ("name", "city", "state", "url", "scraper_id", "timezone")),
         *((_show, f) for f in ("performer", "venue", "city", "state", "source", "ticket_url")),
         (_watch_record, "performer"),
         (_watch_record, "show_id"),

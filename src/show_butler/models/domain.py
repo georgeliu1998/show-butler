@@ -18,6 +18,7 @@ import re
 import unicodedata
 from datetime import date, datetime, timezone
 from typing import List, Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -41,6 +42,15 @@ def _to_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
         raise ValueError("Datetime must be timezone-aware")
     return value.astimezone(timezone.utc)
+
+
+def _check_timezone(value: str) -> str:
+    """Return ``value`` if it names an IANA timezone, else raise ``ValueError``."""
+    try:
+        ZoneInfo(value)
+    except (ZoneInfoNotFoundError, ValueError):
+        raise ValueError(f"Unknown IANA timezone: '{value}'") from None
+    return value
 
 
 def _now_utc() -> datetime:
@@ -88,13 +98,25 @@ class Performer(_DomainModel):
 
 
 class Venue(_DomainModel):
-    """A monitored venue and the source implementation that reads its site."""
+    """A monitored venue and the source implementation that reads its site.
+
+    ``timezone`` is the venue's IANA zone. Sources use it to localize listings
+    that print a wall-clock time without an offset, and display code uses it to
+    turn a show's UTC ``start_dt`` back into the time printed on the ticket.
+    """
 
     name: str = Field(..., description="Venue display name")
     city: str = Field(..., description="Venue city")
     state: str = Field(..., description="Venue state")
     url: str = Field(..., description="Venue shows/calendar page URL")
     scraper_id: str = Field(..., description="Identifier of the source scraper for this venue")
+    timezone: str = Field(..., description="IANA timezone of the venue (e.g. America/Chicago)")
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:
+        """Require a timezone name the system's tz database knows."""
+        return _check_timezone(v)
 
 
 class Show(_DomainModel):
