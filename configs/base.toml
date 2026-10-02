@@ -66,7 +66,7 @@ priority = 0
 name = "Houston Improv"
 city = "Houston"
 state = "Texas"
-url = "https://improv.com/houston/"
+url = "https://improvtx.com/houston/calendar/"
 scraper_id = "houston_improv"
 home_market = true
 
@@ -74,7 +74,7 @@ home_market = true
 name = "Punch Line Houston"
 city = "Houston"
 state = "Texas"
-url = "https://www.punchlinecomedyclub.com/"
+url = "https://www.punchlinehtx.com/shows"
 scraper_id = "punchline_houston"
 home_market = true
 
@@ -82,7 +82,7 @@ home_market = true
 name = "The Secret Group"
 city = "Houston"
 state = "Texas"
-url = "https://thesecretgroup.org/"
+url = "https://www.thesecretgrouphtx.com/"
 scraper_id = "secret_group"
 home_market = true
 
@@ -90,7 +90,7 @@ home_market = true
 name = "Addison Improv"
 city = "Addison"
 state = "Texas"
-url = "https://improv.com/addison/"
+url = "https://improvtx.com/addison/calendar/"
 scraper_id = "addison_improv"
 home_market = false
 
@@ -106,7 +106,7 @@ home_market = false
 name = "Hyenas Comedy Club"
 city = "Dallas"
 state = "Texas"
-url = "https://www.improvtx.com/hyenasdallas/"
+url = "https://www.hyenascomedynightclub.com/dallas"
 scraper_id = "hyenas_dallas"
 home_market = false
 
