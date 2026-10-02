@@ -7,6 +7,7 @@ from show_butler.exceptions.config import (
     ConfigValidationError,
     InvalidEnvironmentError,
 )
+from show_butler.exceptions.sources import SourceError
 
 __all__ = [
     "ShowButlerError",
@@ -14,4 +15,5 @@ __all__ = [
     "ConfigFileError",
     "ConfigValidationError",
     "InvalidEnvironmentError",
+    "SourceError",
 ]
