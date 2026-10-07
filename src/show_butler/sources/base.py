@@ -15,6 +15,8 @@ from show_butler.sources.http import parse_start
 
 logger = logging.getLogger(__name__)
 
+_INACTIVE_STATUSES = ("EventCancelled", "EventPostponed")
+
 
 class ShowSource(ABC):
     """Something that can list upcoming shows.
@@ -94,10 +96,15 @@ class VenueSource(ShowSource):
         """Convert schema.org ``Event`` objects into shows.
 
         The ticket link is the offer URL when there is one, else the event URL.
+        Cancelled and postponed events are dropped; rescheduled ones are kept
+        because their ``startDate`` is the new date.
         """
         shows = []
         for event in events:
             name, start = event.get("name"), event.get("startDate")
+            if str(event.get("eventStatus", "")).endswith(_INACTIVE_STATUSES):
+                logger.info("%s: skipping %r marked %s", self.source_id, name, event["eventStatus"])
+                continue
             if not isinstance(name, str) or not isinstance(start, str):
                 logger.warning("%s: skipping event without name/startDate", self.source_id)
                 continue

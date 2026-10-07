@@ -231,12 +231,25 @@ def test_json_ld_listing_reads_punch_line(client: httpx.Client) -> None:
     shows = JsonLdListingSource(_venue(url, "punchline_houston"), client).fetch()
 
     grouped = _by_performer(shows)
-    assert sorted(grouped) == ["Kevin Sullivan", "Rick Glassman"]
+    assert sorted(grouped) == ["Kevin Sullivan", "Rescheduled Comic", "Rick Glassman"]
     sullivan = grouped["Kevin Sullivan"][0]
     assert sullivan.start_dt == datetime(2026, 9, 30, 19, 30, tzinfo=CDT)
     assert sullivan.ticket_url == (
         "https://www.ticketmaster.com/kevin-sullivan-houston-texas-09-30-2026/event/3A00648AD177EEFF"
     )
+
+
+@respx.mock
+def test_json_ld_listing_skips_cancelled_and_postponed_events(client: httpx.Client) -> None:
+    url = "https://www.punchlinehtx.com/shows"
+    respx.get(url).respond(200, text=_fixture("punchline.html"))
+
+    shows = JsonLdListingSource(_venue(url, "punchline_houston"), client).fetch()
+
+    performers = {s.performer for s in shows}
+    assert "Cancelled Comic" not in performers
+    assert "Postponed Comic" not in performers
+    assert "Rescheduled Comic" in performers
 
 
 @respx.mock
