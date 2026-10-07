@@ -111,11 +111,13 @@ scraper_id = "capcity_austin"
 timezone = "America/Chicago"
 home_market = false
 
+# The club's page shows only its next 12 shows; the chain-wide calendar lists
+# every location weeks further out, and the source keeps the Dallas events.
 [[venues]]
 name = "Hyenas Comedy Club"
 city = "Dallas"
 state = "Texas"
-url = "https://www.hyenascomedynightclub.com/dallas"
+url = "https://calendar.hyenascomedynightclub.com/"
 scraper_id = "hyenas_dallas"
 timezone = "America/Chicago"
 home_market = false

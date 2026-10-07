@@ -365,40 +365,39 @@ def test_eventbrite_raises_when_no_upcoming_event_is_usable(client: httpx.Client
 
 # --- Hyenas ------------------------------------------------------------------------
 
-HYENAS = "https://www.hyenascomedynightclub.com/dallas"
+HYENAS = "https://calendar.hyenascomedynightclub.com/"
 
 
 @respx.mock
-def test_hyenas_reads_show_cards_in_local_time(client: httpx.Client) -> None:
+def test_hyenas_reads_only_the_venues_city_from_the_chain_calendar(
+    client: httpx.Client,
+) -> None:
     respx.get(HYENAS).respond(200, text=_fixture("hyenas.html"))
 
     shows = HyenasSource(_venue(HYENAS, "hyenas_dallas", city="Dallas"), client).fetch()
 
     grouped = _by_performer(shows)
-    assert sorted(grouped) == ["Ashley Gavin", "Sammy Obeid"]
-    assert len(shows) == 2
-    gavin = grouped["Ashley Gavin"][0]
-    assert gavin.start_dt == datetime(2026, 10, 1, 19, 30, tzinfo=CDT)
-    assert gavin.ticket_url == "https://tixr.com/e/200328"
+    assert sorted(grouped) == ["Hans Kim", "Nick Di Paolo | Special Event", "Sammy Obeid"]
     obeid = grouped["Sammy Obeid"][0]
-    assert obeid.start_dt == datetime(2027, 1, 10, 4, 0, tzinfo=timezone.utc)
+    assert obeid.start_dt == datetime(2026, 10, 12, 18, 30, tzinfo=CDT)
+    assert obeid.ticket_url == "https://www.tixr.com/groups/hyenasdallas/events/sammy-obeid-200298"
+    assert grouped["Hans Kim"][0].start_dt == datetime(2026, 11, 14, 19, 0, tzinfo=CENTRAL)
 
 
 @respx.mock
-def test_hyenas_raises_without_show_cards(client: httpx.Client) -> None:
+def test_hyenas_raises_without_events(client: httpx.Client) -> None:
     respx.get(HYENAS).respond(200, text="<html><body><h1>Hyenas</h1></body></html>")
 
-    with pytest.raises(SourceError, match="no show cards"):
-        HyenasSource(_venue(HYENAS, "hyenas_dallas"), client).fetch()
+    with pytest.raises(SourceError, match="no JSON-LD events"):
+        HyenasSource(_venue(HYENAS, "hyenas_dallas", city="Dallas"), client).fetch()
 
 
 @respx.mock
-def test_hyenas_raises_when_every_card_is_unreadable(client: httpx.Client) -> None:
-    html = "<div><h3>Someone</h3><div><p>Show Starts:</p><p>Soon</p><p>TBA</p></div></div>"
-    respx.get(HYENAS).respond(200, text=html)
+def test_hyenas_raises_when_no_event_is_in_the_venues_city(client: httpx.Client) -> None:
+    respx.get(HYENAS).respond(200, text=_fixture("hyenas.html"))
 
     with pytest.raises(SourceError, match="no shows read"):
-        HyenasSource(_venue(HYENAS, "hyenas_dallas"), client).fetch()
+        HyenasSource(_venue(HYENAS, "hyenas_dallas", city="Austin"), client).fetch()
 
 
 # --- Registry ------------------------------------------------------------------------
