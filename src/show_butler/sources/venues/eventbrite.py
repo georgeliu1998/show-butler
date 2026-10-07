@@ -21,9 +21,10 @@ class EventbriteOrganizerSource(VenueSource):
 
     ``venue.url`` is the organizer page (``eventbrite.com/o/...``). Each event
     gives a local date, time, and IANA timezone. The page embeds only the first
-    batch of events (about 12, a few days for a venue with nightly open mics);
-    Eventbrite's "show more" endpoint rejects scripts, so later shows are only
-    seen once they move into that window.
+    batch of events (about 12, which is about three days for a venue with
+    nightly open mics), and Eventbrite's "show more" endpoint rejects scripts.
+    A weekly run therefore never sees shows that fall between one run's window
+    and the next run's date.
     """
 
     def _fetch(self) -> List[Show]:

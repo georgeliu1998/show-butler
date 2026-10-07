@@ -61,9 +61,9 @@ aliases = []
 priority = 0
 
 # Monitored venues. `scraper_id` links each venue to a source scraper in
-# src/sources, which reads the listing at `url`. `timezone` (IANA) localizes
-# listed times that carry no UTC offset. Home-market venues are in Houston; the
-# rest cover in-state (TX).
+# src/show_butler/sources, which reads the listing at `url`. `timezone` (IANA)
+# localizes listed times that carry no UTC offset. Home-market venues are in
+# Houston; the rest cover in-state (TX).
 [[venues]]
 name = "Houston Improv"
 city = "Houston"

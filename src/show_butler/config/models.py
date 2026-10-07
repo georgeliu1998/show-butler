@@ -143,10 +143,10 @@ class ComedianConfig(_StrictModel):
 class VenueConfig(_StrictModel):
     """A monitored venue and the scraper that knows how to read its site.
 
-    ``scraper_id`` links the venue to a source implementation in ``src/sources``.
-    ``home_market`` distinguishes in-town venues from in-state ones so the digest
-    can group them. ``timezone`` is the venue's IANA zone, used to read listed
-    show times that carry no UTC offset.
+    ``scraper_id`` links the venue to a source implementation in
+    ``show_butler.sources``. ``home_market`` distinguishes in-town venues from
+    in-state ones so the digest can group them. ``timezone`` is the venue's
+    IANA zone, used to read listed show times that carry no UTC offset.
     """
 
     name: str = Field(..., description="Venue display name")
