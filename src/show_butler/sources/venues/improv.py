@@ -43,7 +43,8 @@ class ImprovSource(VenueSource):
         return list(shows.values())
 
     def _detail_urls(self, calendar_html: str) -> List[str]:
-        club_root = urljoin(self.venue.url, "../")
+        club = urlsplit(self.venue.url).path.strip("/").split("/")[0]
+        club_root = urljoin(self.venue.url, f"/{club}/")
         urls = []
         for link in LexborHTMLParser(calendar_html).css("a[href]"):
             url = urljoin(self.venue.url, link.attributes["href"] or "").split("#")[0]

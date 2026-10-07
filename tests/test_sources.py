@@ -121,8 +121,8 @@ def test_client_sends_identifying_user_agent(client: httpx.Client) -> None:
 IMPROV_CALENDAR = "https://improvtx.com/houston/calendar/"
 
 
-def _mock_improv(gone_status: int = 404) -> None:
-    respx.get(IMPROV_CALENDAR).respond(200, text=_fixture("improv_calendar.html"))
+def _mock_improv(gone_status: int = 404, calendar: str = IMPROV_CALENDAR) -> None:
+    respx.get(calendar).respond(200, text=_fixture("improv_calendar.html"))
     respx.get("https://improvtx.com/houston/comic/marlon+wayans/").respond(
         200, text=_fixture("improv_comic.html")
     )
@@ -173,10 +173,11 @@ def test_improv_dedupes_shows_listed_on_two_pages(client: httpx.Client) -> None:
 
 
 @respx.mock
-def test_improv_ignores_the_other_clubs_links(client: httpx.Client) -> None:
-    _mock_improv()
+@pytest.mark.parametrize("calendar", [IMPROV_CALENDAR, IMPROV_CALENDAR.rstrip("/")])
+def test_improv_ignores_the_other_clubs_links(client: httpx.Client, calendar: str) -> None:
+    _mock_improv(calendar=calendar)
 
-    ImprovSource(_venue(IMPROV_CALENDAR, "houston_improv"), client).fetch()
+    ImprovSource(_venue(calendar, "houston_improv"), client).fetch()
 
     requested = {str(call.request.url) for call in respx.calls}
     assert not any("/addison/" in url for url in requested)
