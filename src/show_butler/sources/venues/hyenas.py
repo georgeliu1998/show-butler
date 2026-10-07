@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import List, Optional, Tuple
 
-from selectolax.parser import HTMLParser, Node
+from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from show_butler.exceptions import SourceError
 from show_butler.models import Show
@@ -28,7 +28,7 @@ class HyenasSource(VenueSource):
     """
 
     def fetch(self) -> List[Show]:
-        tree = HTMLParser(fetch_html(self.client, self.venue.url))
+        tree = LexborHTMLParser(fetch_html(self.client, self.venue.url))
         labels = [p for p in tree.css("p") if _is_label(p)]
         if not labels:
             raise SourceError(f"{self.source_id}: no show cards on {self.venue.url}")
@@ -39,7 +39,7 @@ class HyenasSource(VenueSource):
                 shows.append(show)
         return shows
 
-    def _show_from_card(self, label: Node) -> Optional[Show]:
+    def _show_from_card(self, label: LexborNode) -> Optional[Show]:
         card, heading = _card_for(label)
         if card is None or heading is None or label.parent is None:
             logger.warning("%s: skipping card without a performer heading", self.source_id)
@@ -59,11 +59,11 @@ class HyenasSource(VenueSource):
         )
 
 
-def _is_label(node: Node) -> bool:
+def _is_label(node: LexborNode) -> bool:
     return node.text(strip=True) == _LABEL
 
 
-def _card_for(label: Node) -> Tuple[Optional[Node], Optional[Node]]:
+def _card_for(label: LexborNode) -> Tuple[Optional[LexborNode], Optional[LexborNode]]:
     """Return the nearest ancestor of ``label`` holding a heading, and that heading.
 
     The search stops at an ancestor that holds another show's label, so a card

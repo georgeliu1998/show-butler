@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
-from selectolax.parser import HTMLParser
+from selectolax.lexbor import LexborHTMLParser
 
 from show_butler.exceptions import SourceError
 from show_butler.models import Show
@@ -45,7 +45,7 @@ class EventbriteOrganizerSource(VenueSource):
         return shows
 
     def _upcoming_events(self, html: str) -> List[Dict[str, Any]]:
-        script = HTMLParser(html).css_first("script#__NEXT_DATA__")
+        script = LexborHTMLParser(html).css_first("script#__NEXT_DATA__")
         try:
             data = json.loads(script.text() if script else "")
             events = data["props"]["pageProps"]["upcomingEvents"]

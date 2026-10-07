@@ -5,7 +5,7 @@ import re
 from typing import Dict, List
 from urllib.parse import urljoin, urlsplit
 
-from selectolax.parser import HTMLParser
+from selectolax.lexbor import LexborHTMLParser
 
 from show_butler.exceptions import SourceError
 from show_butler.models import Show
@@ -45,7 +45,7 @@ class ImprovSource(VenueSource):
     def _detail_urls(self, calendar_html: str) -> List[str]:
         club_root = urljoin(self.venue.url, "../")
         urls = []
-        for link in HTMLParser(calendar_html).css("a[href]"):
+        for link in LexborHTMLParser(calendar_html).css("a[href]"):
             url = urljoin(self.venue.url, link.attributes["href"] or "").split("#")[0]
             if url.startswith(club_root) and _DETAIL_PATH.search(urlsplit(url).path):
                 urls.append(url)

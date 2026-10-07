@@ -6,7 +6,7 @@ from datetime import datetime, tzinfo
 from typing import Any, Dict, Iterator, List
 
 import httpx
-from selectolax.parser import HTMLParser
+from selectolax.lexbor import LexborHTMLParser
 
 from show_butler.exceptions import SourceError
 
@@ -43,7 +43,7 @@ def json_ld_events(html: str) -> List[Dict[str, Any]]:
     Blocks that are not valid JSON are skipped.
     """
     events: List[Dict[str, Any]] = []
-    for block in HTMLParser(html).css('script[type="application/ld+json"]'):
+    for block in LexborHTMLParser(html).css('script[type="application/ld+json"]'):
         try:
             data = json.loads(block.text())
         except json.JSONDecodeError:
