@@ -26,7 +26,7 @@ class EventbriteOrganizerSource(VenueSource):
     seen once they move into that window.
     """
 
-    def fetch(self) -> List[Show]:
+    def _fetch(self) -> List[Show]:
         shows = []
         for event in self._upcoming_events(fetch_html(self.client, self.venue.url)):
             if event.get("is_cancelled"):

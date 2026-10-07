@@ -17,7 +17,7 @@ class JsonLdListingSource(VenueSource):
     "Special Event: ..." prefixes), leaving name cleanup to matching.
     """
 
-    def fetch(self) -> List[Show]:
+    def _fetch(self) -> List[Show]:
         events = json_ld_events(fetch_html(self.client, self.venue.url))
         if not events:
             raise SourceError(f"{self.source_id}: no JSON-LD events on {self.venue.url}")

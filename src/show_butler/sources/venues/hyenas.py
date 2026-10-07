@@ -27,7 +27,7 @@ class HyenasSource(VenueSource):
     found by that label rather than by the site builder's generated class names.
     """
 
-    def fetch(self) -> List[Show]:
+    def _fetch(self) -> List[Show]:
         tree = LexborHTMLParser(fetch_html(self.client, self.venue.url))
         labels = [p for p in tree.css("p") if _is_label(p)]
         if not labels:

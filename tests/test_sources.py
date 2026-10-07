@@ -210,6 +210,15 @@ def test_improv_raises_when_calendar_has_no_show_links(client: httpx.Client) -> 
         ImprovSource(_venue(IMPROV_CALENDAR, "houston_improv"), client).fetch()
 
 
+@respx.mock
+def test_improv_raises_when_every_detail_page_fails(client: httpx.Client) -> None:
+    respx.get(IMPROV_CALENDAR).respond(200, text=_fixture("improv_calendar.html"))
+    respx.get(url__startswith="https://improvtx.com/houston/").respond(403)
+
+    with pytest.raises(SourceError, match="no shows read"):
+        ImprovSource(_venue(IMPROV_CALENDAR, "houston_improv"), client).fetch()
+
+
 # --- JSON-LD listing pages (Punch Line, Cap City) ---------------------------------
 
 
@@ -249,6 +258,21 @@ def test_json_ld_listing_raises_without_events(client: httpx.Client) -> None:
     respx.get(url).respond(200, text="<html><body>Coming soon</body></html>")
 
     with pytest.raises(SourceError, match="no JSON-LD events"):
+        JsonLdListingSource(_venue(url, "punchline_houston"), client).fetch()
+
+
+@respx.mock
+def test_json_ld_listing_raises_when_every_event_is_malformed(client: httpx.Client) -> None:
+    url = "https://www.punchlinehtx.com/shows"
+    html = """
+    <script type="application/ld+json">{"@type": "Event", "name": "No Start"}</script>
+    <script type="application/ld+json">
+      {"@type": "Event", "name": "Bad Start", "startDate": "next friday"}
+    </script>
+    """
+    respx.get(url).respond(200, text=html)
+
+    with pytest.raises(SourceError, match="no shows read"):
         JsonLdListingSource(_venue(url, "punchline_houston"), client).fetch()
 
 
@@ -313,6 +337,18 @@ def test_eventbrite_raises_when_page_shape_changes(client: httpx.Client, html: s
         EventbriteOrganizerSource(_venue(EVENTBRITE, "secret_group"), client).fetch()
 
 
+@respx.mock
+def test_eventbrite_raises_when_no_upcoming_event_is_usable(client: httpx.Client) -> None:
+    html = (
+        '<script id="__NEXT_DATA__" type="application/json">'
+        '{"props": {"pageProps": {"upcomingEvents": []}}}</script>'
+    )
+    respx.get(EVENTBRITE).respond(200, text=html)
+
+    with pytest.raises(SourceError, match="no shows read"):
+        EventbriteOrganizerSource(_venue(EVENTBRITE, "secret_group"), client).fetch()
+
+
 # --- Hyenas ------------------------------------------------------------------------
 
 HYENAS = "https://www.hyenascomedynightclub.com/dallas"
@@ -339,6 +375,15 @@ def test_hyenas_raises_without_show_cards(client: httpx.Client) -> None:
     respx.get(HYENAS).respond(200, text="<html><body><h1>Hyenas</h1></body></html>")
 
     with pytest.raises(SourceError, match="no show cards"):
+        HyenasSource(_venue(HYENAS, "hyenas_dallas"), client).fetch()
+
+
+@respx.mock
+def test_hyenas_raises_when_every_card_is_unreadable(client: httpx.Client) -> None:
+    html = "<div><h3>Someone</h3><div><p>Show Starts:</p><p>Soon</p><p>TBA</p></div></div>"
+    respx.get(HYENAS).respond(200, text=html)
+
+    with pytest.raises(SourceError, match="no shows read"):
         HyenasSource(_venue(HYENAS, "hyenas_dallas"), client).fetch()
 
 

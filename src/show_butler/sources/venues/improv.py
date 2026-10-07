@@ -27,7 +27,7 @@ class ImprovSource(VenueSource):
     club's path (e.g. the other Improv) are ignored.
     """
 
-    def fetch(self) -> List[Show]:
+    def _fetch(self) -> List[Show]:
         detail_urls = self._detail_urls(fetch_html(self.client, self.venue.url))
         if not detail_urls:
             raise SourceError(f"{self.source_id}: no show links on {self.venue.url}")

@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 import httpx
 from pydantic import ValidationError
 
+from show_butler.exceptions import SourceError
 from show_butler.models import Show, Venue
 from show_butler.sources.http import parse_start
 
@@ -53,6 +54,23 @@ class VenueSource(ShowSource):
     @property
     def source_id(self) -> str:
         return self.venue.scraper_id
+
+    def fetch(self) -> List[Show]:
+        """Return the shows currently listed at the venue.
+
+        Raises:
+            SourceError: If the listing cannot be fetched, or it yields no shows.
+                A listing whose every entry is skipped almost always means the
+                site changed or blocked the scraper, not that the venue is dark.
+        """
+        shows = self._fetch()
+        if not shows:
+            raise SourceError(f"{self.source_id}: no shows read from {self.venue.url}")
+        return shows
+
+    @abstractmethod
+    def _fetch(self) -> List[Show]:
+        """Read the venue's listing into shows, skipping and logging bad entries."""
 
     def _make_show(
         self, performer: str, start_dt: datetime, ticket_url: Optional[str]
