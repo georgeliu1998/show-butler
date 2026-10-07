@@ -68,13 +68,16 @@ def test_json_ld_events_handles_published_shapes() -> None:
     <script type="application/ld+json">
       {"@type": "Place", "name": "Club", "Events": [{"@type": "Event", "name": "Nested"}]}
     </script>
+    <script type="application/ld+json">{"@type": ["Event", "Thing"], "name": "Multi-typed"}</script>
     <script type="application/ld+json">{"@type": "Organization", "name": "Not an event"}</script>
+    <script type="application/ld+json">{"@type": "EventVenue", "name": "A venue"}</script>
+    <script type="application/ld+json">{"@type": "EventSeries", "name": "A series"}</script>
     <script type="application/ld+json">{ broken </script>
     """
 
     names = [e["name"] for e in json_ld_events(html)]
 
-    assert names == ["Single", "Listed", "Graph", "Nested"]
+    assert names == ["Single", "Listed", "Graph", "Nested", "Multi-typed"]
 
 
 def test_parse_start_keeps_an_explicit_offset() -> None:

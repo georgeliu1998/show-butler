@@ -49,8 +49,17 @@ def json_ld_events(html: str) -> List[Dict[str, Any]]:
         except json.JSONDecodeError:
             logger.warning("Skipping unparseable JSON-LD block")
             continue
-        events.extend(obj for obj in _walk(data) if "Event" in str(obj.get("@type", "")))
+        events.extend(obj for obj in _walk(data) if _is_event(obj))
     return events
+
+
+def _is_event(obj: Dict[str, Any]) -> bool:
+    """Whether a JSON-LD object's ``@type`` (one name or a list) is an ``*Event``."""
+    types = obj.get("@type")
+    for t in types if isinstance(types, list) else [types]:
+        if isinstance(t, str) and t.endswith("Event"):
+            return True
+    return False
 
 
 def _walk(data: Any) -> Iterator[Dict[str, Any]]:
