@@ -8,11 +8,11 @@ except secrets, which the loader injects from environment variables.
 
 import os
 from typing import Dict, List, Optional
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from show_butler.models.enums import Environment
+from show_butler.utils.timezones import check_timezone
 
 # Providers and models supported for the LLM-backed discovery task. The app
 # targets Google AI Studio's free tier, so Gemini is the default; the list is
@@ -163,11 +163,7 @@ class VenueConfig(_StrictModel):
     @classmethod
     def validate_timezone(cls, v: str) -> str:
         """Reject a typo'd timezone at load time rather than mid-scrape."""
-        try:
-            ZoneInfo(v)
-        except (ZoneInfoNotFoundError, ValueError):
-            raise ValueError(f"Unknown IANA timezone: '{v}'") from None
-        return v
+        return check_timezone(v)
 
 
 class ScheduleConfig(_StrictModel):

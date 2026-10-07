@@ -18,11 +18,11 @@ import re
 import unicodedata
 from datetime import date, datetime, timezone
 from typing import List, Optional
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from show_butler.models.enums import BookingStatus
+from show_butler.utils.timezones import check_timezone
 
 _WHITESPACE = re.compile(r"\s+")
 
@@ -42,15 +42,6 @@ def _to_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
         raise ValueError("Datetime must be timezone-aware")
     return value.astimezone(timezone.utc)
-
-
-def _check_timezone(value: str) -> str:
-    """Return ``value`` if it names an IANA timezone, else raise ``ValueError``."""
-    try:
-        ZoneInfo(value)
-    except (ZoneInfoNotFoundError, ValueError):
-        raise ValueError(f"Unknown IANA timezone: '{value}'") from None
-    return value
 
 
 def _now_utc() -> datetime:
@@ -116,7 +107,7 @@ class Venue(_DomainModel):
     @classmethod
     def validate_timezone(cls, v: str) -> str:
         """Require a timezone name the system's tz database knows."""
-        return _check_timezone(v)
+        return check_timezone(v)
 
 
 class Show(_DomainModel):
