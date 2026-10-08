@@ -223,7 +223,7 @@ def test_improv_raises_when_every_detail_page_fails(client: httpx.Client) -> Non
         ImprovSource(_venue(IMPROV_CALENDAR, "houston_improv"), client).fetch()
 
 
-# --- JSON-LD listing pages (Punch Line, Cap City) ---------------------------------
+# --- JSON-LD listing pages (Punch Line, Cap City, The Riot) -----------------------
 
 
 @respx.mock
@@ -267,6 +267,23 @@ def test_json_ld_listing_reads_cap_city_nested_events(client: httpx.Client) -> N
     assert trae.start_dt.astimezone(CENTRAL).strftime("%Y-%m-%d %H:%M") == "2026-10-01 19:00"
     assert trae.ticket_url == "https://www.capcitycomedy.com/shows/339904"
     assert "The Red Room at Cap City: Daniel Simonsen" in grouped
+
+
+@respx.mock
+def test_json_ld_listing_reads_riot_event_array(client: httpx.Client) -> None:
+    url = "https://www.theriothtx.com/calendar"
+    respx.get(url).respond(200, text=_fixture("riot.html"))
+
+    shows = JsonLdListingSource(_venue(url, "riot_houston"), client).fetch()
+
+    grouped = _by_performer(shows)
+    chinedu = grouped["Comedian Chinedu (Hulu, FOX) Headlines The Riot Comedy Club"][0]
+    assert chinedu.start_dt == datetime(2026, 10, 2, 19, 0, tzinfo=CDT)
+    assert chinedu.ticket_url == (
+        "https://www.theriothtx.com/events/"
+        "comedian-chinedu-hulu-fox-headlines-the-riot-comedy-club-2026-10-02190000"
+    )
+    assert "The Riot Presents Friday Night Standup Comedy Showcase" in grouped
 
 
 @respx.mock

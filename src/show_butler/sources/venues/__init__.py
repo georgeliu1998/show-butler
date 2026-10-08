@@ -12,7 +12,9 @@ VENUE_SOURCES: Dict[str, Type[VenueSource]] = {
     "houston_improv": ImprovSource,
     "addison_improv": ImprovSource,
     "punchline_houston": JsonLdListingSource,
+    "punchline_irving": JsonLdListingSource,
     "capcity_austin": JsonLdListingSource,
+    "riot_houston": JsonLdListingSource,
     "secret_group": EventbriteOrganizerSource,
     "hyenas_dallas": HyenasSource,
 }
