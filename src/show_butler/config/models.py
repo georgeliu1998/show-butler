@@ -12,6 +12,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from show_butler.models.enums import Environment
+from show_butler.utils.timezones import check_timezone
 
 # Providers and models supported for the LLM-backed discovery task. The app
 # targets Google AI Studio's free tier, so Gemini is the default; the list is
@@ -142,9 +143,10 @@ class ComedianConfig(_StrictModel):
 class VenueConfig(_StrictModel):
     """A monitored venue and the scraper that knows how to read its site.
 
-    ``scraper_id`` links the venue to a source implementation in ``src/sources``.
-    ``home_market`` distinguishes in-town venues from in-state ones so the digest
-    can group them.
+    ``scraper_id`` links the venue to a source implementation in
+    ``show_butler.sources``. ``home_market`` distinguishes in-town venues from
+    in-state ones so the digest can group them. ``timezone`` is the venue's
+    IANA zone, used to read listed show times that carry no UTC offset.
     """
 
     name: str = Field(..., description="Venue display name")
@@ -152,9 +154,16 @@ class VenueConfig(_StrictModel):
     state: str = Field(..., description="Venue state")
     url: str = Field(..., description="Venue shows/calendar page URL")
     scraper_id: str = Field(..., description="Identifier of the source scraper for this venue")
+    timezone: str = Field(..., description="IANA timezone of the venue (e.g. America/Chicago)")
     home_market: bool = Field(
         default=False, description="Whether the venue is in the user's home city"
     )
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:
+        """Reject a typo'd timezone at load time rather than mid-scrape."""
+        return check_timezone(v)
 
 
 class ScheduleConfig(_StrictModel):

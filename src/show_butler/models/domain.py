@@ -22,6 +22,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from show_butler.models.enums import BookingStatus
+from show_butler.utils.timezones import check_timezone
 
 _WHITESPACE = re.compile(r"\s+")
 
@@ -88,13 +89,25 @@ class Performer(_DomainModel):
 
 
 class Venue(_DomainModel):
-    """A monitored venue and the source implementation that reads its site."""
+    """A monitored venue and the source implementation that reads its site.
+
+    ``timezone`` is the venue's IANA zone. Sources use it to localize listings
+    that print a wall-clock time without an offset, and display code uses it to
+    turn a show's UTC ``start_dt`` back into the time printed on the ticket.
+    """
 
     name: str = Field(..., description="Venue display name")
     city: str = Field(..., description="Venue city")
     state: str = Field(..., description="Venue state")
     url: str = Field(..., description="Venue shows/calendar page URL")
     scraper_id: str = Field(..., description="Identifier of the source scraper for this venue")
+    timezone: str = Field(..., description="IANA timezone of the venue (e.g. America/Chicago)")
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:
+        """Require a timezone name the system's tz database knows."""
+        return check_timezone(v)
 
 
 class Show(_DomainModel):

@@ -61,13 +61,16 @@ aliases = []
 priority = 0
 
 # Monitored venues. `scraper_id` links each venue to a source scraper in
-# src/sources. Home-market venues are in Houston; the rest cover in-state (TX).
+# src/show_butler/sources, which reads the listing at `url`. `timezone` (IANA)
+# localizes listed times that carry no UTC offset. Home-market venues are in
+# Houston; the rest cover in-state (TX).
 [[venues]]
 name = "Houston Improv"
 city = "Houston"
 state = "Texas"
 url = "https://improvtx.com/houston/calendar/"
 scraper_id = "houston_improv"
+timezone = "America/Chicago"
 home_market = true
 
 [[venues]]
@@ -76,14 +79,18 @@ city = "Houston"
 state = "Texas"
 url = "https://www.punchlinehtx.com/shows"
 scraper_id = "punchline_houston"
+timezone = "America/Chicago"
 home_market = true
 
+# The club's own site loads listings client-side; its Eventbrite organizer page
+# embeds the same events as JSON.
 [[venues]]
 name = "The Secret Group"
 city = "Houston"
 state = "Texas"
-url = "https://www.thesecretgrouphtx.com/"
+url = "https://www.eventbrite.com/o/the-secret-group-20138725138"
 scraper_id = "secret_group"
+timezone = "America/Chicago"
 home_market = true
 
 [[venues]]
@@ -92,6 +99,7 @@ city = "Addison"
 state = "Texas"
 url = "https://improvtx.com/addison/calendar/"
 scraper_id = "addison_improv"
+timezone = "America/Chicago"
 home_market = false
 
 [[venues]]
@@ -100,14 +108,18 @@ city = "Austin"
 state = "Texas"
 url = "https://capcitycomedy.com/"
 scraper_id = "capcity_austin"
+timezone = "America/Chicago"
 home_market = false
 
+# The club's page shows only its next 12 shows; the chain-wide calendar lists
+# every location weeks further out, and the source keeps the Dallas events.
 [[venues]]
 name = "Hyenas Comedy Club"
 city = "Dallas"
 state = "Texas"
-url = "https://www.hyenascomedynightclub.com/dallas"
+url = "https://calendar.hyenascomedynightclub.com/"
 scraper_id = "hyenas_dallas"
+timezone = "America/Chicago"
 home_market = false
 
 # Weekly run schedule (used by Cloud Scheduler wiring). Defaults to Monday 9am.

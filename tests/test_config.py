@@ -8,7 +8,13 @@ from pydantic import ValidationError
 
 from show_butler.config import AppConfig, ConfigLoader, ConfigManager
 from show_butler.config import config as config_proxy
-from show_butler.config.models import BudgetConfig, EmailConfig, LLMConfig, LoggingConfig
+from show_butler.config.models import (
+    BudgetConfig,
+    EmailConfig,
+    LLMConfig,
+    LoggingConfig,
+    VenueConfig,
+)
 from show_butler.exceptions.config import (
     ConfigFileError,
     ConfigValidationError,
@@ -303,3 +309,24 @@ def test_email_recipient_defaults_without_env() -> None:
 def test_model_rejects_unknown_key() -> None:
     with pytest.raises(ValidationError):
         BudgetConfig(yearly_amount=100.0, warning_threshhold=0.9)
+
+
+def test_venue_rejects_unknown_timezone() -> None:
+    with pytest.raises(ValidationError, match="Unknown IANA timezone"):
+        VenueConfig(
+            name="Houston Improv",
+            city="Houston",
+            state="Texas",
+            url="https://improvtx.com/houston/calendar/",
+            scraper_id="houston_improv",
+            timezone="America/Houston",
+        )
+
+
+def test_every_configured_venue_has_a_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "dev")
+    _clear_secret_env(monkeypatch)
+
+    cfg = _load()
+
+    assert {v.timezone for v in cfg.venues} == {"America/Chicago"}
