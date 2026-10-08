@@ -63,7 +63,7 @@ def test_loads_dev_config(monkeypatch: pytest.MonkeyPatch) -> None:
     assert cfg.general.name == "show-butler"
     assert cfg.home.city == "Houston"
     assert cfg.home.state == "Texas"
-    assert len(cfg.comedians) == 8
+    assert len(cfg.comedians) == 9
     assert len(cfg.venues) == 6
     assert cfg.budget.yearly_amount == 500.0
     assert cfg.agent_tasks.discovery.provider == "google"

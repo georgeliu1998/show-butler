@@ -60,6 +60,11 @@ name = "Jim Breuer"
 aliases = []
 priority = 0
 
+[[comedians]]
+name = "Dave Smith"
+aliases = []
+priority = 0
+
 # Monitored venues. `scraper_id` links each venue to a source scraper in
 # src/show_butler/sources, which reads the listing at `url`. `timezone` (IANA)
 # localizes listed times that carry no UTC offset. Home-market venues are in
