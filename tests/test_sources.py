@@ -304,6 +304,10 @@ RIOT_FRIDAY = "The Riot Presents Friday Night Standup Comedy Showcase"
 RIOT_SUNDAY = 'The Riot Presents "Houston\'s Funniest" Sunday Comedy Showcase'
 
 
+def test_riot_is_registered_with_its_month_aware_source() -> None:
+    assert VENUE_SOURCES["riot_houston"] is RiotSource
+
+
 def _riot_months() -> tuple[str, str]:
     """The two calendar URLs the source reads today."""
     return month_urls(RIOT_CALENDAR, datetime.now(CENTRAL).date())
