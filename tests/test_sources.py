@@ -22,7 +22,7 @@ from show_butler.sources.venues import (
     JsonLdListingSource,
     RiotSource,
 )
-from show_butler.sources.venues.riot import month_urls
+from show_butler.sources.venues.riot import _month_urls
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sources"
 CENTRAL = ZoneInfo("America/Chicago")
@@ -310,7 +310,7 @@ def test_riot_is_registered_with_its_month_aware_source() -> None:
 
 def _riot_months() -> tuple[str, str]:
     """The two calendar URLs the source reads today."""
-    return month_urls(RIOT_CALENDAR, datetime.now(CENTRAL).date())
+    return _month_urls(RIOT_CALENDAR, datetime.now(CENTRAL).date())
 
 
 @pytest.mark.parametrize(
@@ -319,10 +319,11 @@ def _riot_months() -> tuple[str, str]:
         (date(2026, 10, 8), ("2026-10", "2026-11")),
         (date(2026, 12, 31), ("2026-12", "2027-01")),
         (date(2027, 2, 1), ("2027-02", "2027-03")),
+        (date(2028, 2, 29), ("2028-02", "2028-03")),
     ],
 )
 def test_riot_month_urls_cover_this_month_and_next(today: date, expected: tuple[str, str]) -> None:
-    assert month_urls(RIOT_CALENDAR, today) == tuple(f"{RIOT_CALENDAR}/{m}" for m in expected)
+    assert _month_urls(RIOT_CALENDAR, today) == tuple(f"{RIOT_CALENDAR}/{m}" for m in expected)
 
 
 @respx.mock

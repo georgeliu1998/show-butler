@@ -29,7 +29,7 @@ class RiotSource(VenueSource):
     """
 
     def _fetch(self) -> List[Show]:
-        current, upcoming = month_urls(self.venue.url, datetime.now(self.tz).date())
+        current, upcoming = _month_urls(self.venue.url, datetime.now(self.tz).date())
         events = json_ld_events(fetch_html(self.client, current))
         if not events:
             raise SourceError(f"{self.source_id}: no JSON-LD events on {current}")
@@ -50,7 +50,7 @@ class RiotSource(VenueSource):
         return events
 
 
-def month_urls(calendar_url: str, today: date) -> Tuple[str, str]:
+def _month_urls(calendar_url: str, today: date) -> Tuple[str, str]:
     """Return the month-addressed calendar URLs for ``today``'s month and the next."""
     base = calendar_url.rstrip("/")
     next_month = (today.replace(day=1) + timedelta(days=31)).replace(day=1)
