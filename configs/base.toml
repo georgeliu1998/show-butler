@@ -98,8 +98,8 @@ scraper_id = "secret_group"
 timezone = "America/Chicago"
 home_market = true
 
-# The home page lists only the next dozen shows; the calendar page carries the
-# club's full month of listings.
+# The home page lists only the next dozen shows, and the calendar page serves
+# one month at a time; the source reads this month and next from it.
 [[venues]]
 name = "The Riot Comedy Club"
 city = "Houston"

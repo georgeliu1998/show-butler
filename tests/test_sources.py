@@ -1,7 +1,7 @@
 """Tests for the show sources (venue scrapers), with HTTP mocked by respx."""
 
 from collections.abc import Iterator
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -20,11 +20,14 @@ from show_butler.sources.venues import (
     HyenasSource,
     ImprovSource,
     JsonLdListingSource,
+    RiotSource,
 )
+from show_butler.sources.venues.riot import month_urls
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sources"
 CENTRAL = ZoneInfo("America/Chicago")
 CDT = timezone(timedelta(hours=-5))
+CST = timezone(timedelta(hours=-6))
 
 
 def _fixture(name: str) -> str:
@@ -223,7 +226,7 @@ def test_improv_raises_when_every_detail_page_fails(client: httpx.Client) -> Non
         ImprovSource(_venue(IMPROV_CALENDAR, "houston_improv"), client).fetch()
 
 
-# --- JSON-LD listing pages (Punch Line, Cap City, The Riot) -----------------------
+# --- JSON-LD listing pages (Punch Line, Cap City) ---------------------------------
 
 
 @respx.mock
@@ -270,23 +273,6 @@ def test_json_ld_listing_reads_cap_city_nested_events(client: httpx.Client) -> N
 
 
 @respx.mock
-def test_json_ld_listing_reads_riot_event_array(client: httpx.Client) -> None:
-    url = "https://www.theriothtx.com/calendar"
-    respx.get(url).respond(200, text=_fixture("riot.html"))
-
-    shows = JsonLdListingSource(_venue(url, "riot_houston"), client).fetch()
-
-    grouped = _by_performer(shows)
-    chinedu = grouped["Comedian Chinedu (Hulu, FOX) Headlines The Riot Comedy Club"][0]
-    assert chinedu.start_dt == datetime(2026, 10, 2, 19, 0, tzinfo=CDT)
-    assert chinedu.ticket_url == (
-        "https://www.theriothtx.com/events/"
-        "comedian-chinedu-hulu-fox-headlines-the-riot-comedy-club-2026-10-02190000"
-    )
-    assert "The Riot Presents Friday Night Standup Comedy Showcase" in grouped
-
-
-@respx.mock
 def test_json_ld_listing_raises_without_events(client: httpx.Client) -> None:
     url = "https://www.punchlinehtx.com/shows"
     respx.get(url).respond(200, text="<html><body>Coming soon</body></html>")
@@ -308,6 +294,80 @@ def test_json_ld_listing_raises_when_every_event_is_malformed(client: httpx.Clie
 
     with pytest.raises(SourceError, match="no shows read"):
         JsonLdListingSource(_venue(url, "punchline_houston"), client).fetch()
+
+
+# --- The Riot Comedy Club (month-addressed calendar) ------------------------------
+
+RIOT_CALENDAR = "https://www.theriothtx.com/calendar"
+RIOT_CHINEDU = "Comedian Chinedu (Hulu, FOX) Headlines The Riot Comedy Club"
+RIOT_FRIDAY = "The Riot Presents Friday Night Standup Comedy Showcase"
+RIOT_SUNDAY = 'The Riot Presents "Houston\'s Funniest" Sunday Comedy Showcase'
+
+
+def _riot_months() -> tuple[str, str]:
+    """The two calendar URLs the source reads today."""
+    current, upcoming = month_urls(RIOT_CALENDAR, datetime.now(CENTRAL).date())
+    return current, upcoming
+
+
+@pytest.mark.parametrize(
+    ("today", "expected"),
+    [
+        (date(2026, 10, 8), ("2026-10", "2026-11")),
+        (date(2026, 12, 31), ("2026-12", "2027-01")),
+        (date(2027, 2, 1), ("2027-02", "2027-03")),
+    ],
+)
+def test_riot_month_urls_cover_this_month_and_next(today: date, expected: tuple[str, str]) -> None:
+    assert month_urls(RIOT_CALENDAR, today) == [f"{RIOT_CALENDAR}/{m}" for m in expected]
+
+
+@respx.mock
+def test_riot_reads_this_month_and_next(client: httpx.Client) -> None:
+    current, upcoming = _riot_months()
+    respx.get(current).respond(200, text=_fixture("riot.html"))
+    respx.get(upcoming).respond(200, text=_fixture("riot_next_month.html"))
+
+    shows = RiotSource(_venue(RIOT_CALENDAR, "riot_houston"), client).fetch()
+
+    grouped = _by_performer(shows)
+    assert set(grouped) == {RIOT_CHINEDU, RIOT_FRIDAY, RIOT_SUNDAY}
+    chinedu = grouped[RIOT_CHINEDU][0]
+    assert chinedu.start_dt == datetime(2026, 10, 2, 19, 0, tzinfo=CDT)
+    assert chinedu.ticket_url == (
+        "https://www.theriothtx.com/events/"
+        "comedian-chinedu-hulu-fox-headlines-the-riot-comedy-club-2026-10-02190000"
+    )
+    friday = grouped[RIOT_FRIDAY][0]
+    assert friday.start_dt == datetime(2026, 10, 2, 21, 0, tzinfo=CDT)
+    assert friday.ticket_url == (
+        "https://www.theriothtx.com/events/"
+        "the-riot-presents-friday-night-standup-comedy-showcase-2026-10-02210000"
+    )
+    assert grouped[RIOT_SUNDAY][0].start_dt == datetime(2026, 11, 1, 18, 0, tzinfo=CST)
+
+
+@respx.mock
+def test_riot_deduplicates_a_month_that_repeats_another(client: httpx.Client) -> None:
+    """Beyond its published horizon the club serves the current month again."""
+    current, upcoming = _riot_months()
+    respx.get(current).respond(200, text=_fixture("riot.html"))
+    respx.get(upcoming).respond(200, text=_fixture("riot.html"))
+
+    shows = RiotSource(_venue(RIOT_CALENDAR, "riot_houston"), client).fetch()
+
+    assert len(shows) == 2
+    assert len({s.id for s in shows}) == 2
+
+
+@respx.mock
+def test_riot_raises_when_a_month_has_no_events(client: httpx.Client) -> None:
+    current, upcoming = _riot_months()
+    respx.get(current).respond(200, text=_fixture("riot.html"))
+    respx.get(upcoming).respond(200, text="<html><body>Nothing booked</body></html>")
+
+    with pytest.raises(SourceError, match="no JSON-LD events"):
+        RiotSource(_venue(RIOT_CALENDAR, "riot_houston"), client).fetch()
 
 
 # --- Eventbrite organizer page (The Secret Group) ---------------------------------
