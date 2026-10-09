@@ -60,6 +60,11 @@ name = "Jim Breuer"
 aliases = []
 priority = 0
 
+[[comedians]]
+name = "Dave Smith"
+aliases = []
+priority = 0
+
 # Monitored venues. `scraper_id` links each venue to a source scraper in
 # src/show_butler/sources, which reads the listing at `url`. `timezone` (IANA)
 # localizes listed times that carry no UTC offset. Home-market venues are in
@@ -93,6 +98,17 @@ scraper_id = "secret_group"
 timezone = "America/Chicago"
 home_market = true
 
+# The home page lists only the next dozen shows, and the calendar page serves
+# one month at a time; the source reads this month and next from it.
+[[venues]]
+name = "The Riot Comedy Club"
+city = "Houston"
+state = "Texas"
+url = "https://www.theriothtx.com/calendar"
+scraper_id = "riot_houston"
+timezone = "America/Chicago"
+home_market = true
+
 [[venues]]
 name = "Addison Improv"
 city = "Addison"
@@ -119,6 +135,15 @@ city = "Dallas"
 state = "Texas"
 url = "https://calendar.hyenascomedynightclub.com/"
 scraper_id = "hyenas_dallas"
+timezone = "America/Chicago"
+home_market = false
+
+[[venues]]
+name = "Punch Line Irving"
+city = "Irving"
+state = "Texas"
+url = "https://www.punchlineirving.com/shows"
+scraper_id = "punchline_irving"
 timezone = "America/Chicago"
 home_market = false
 

@@ -63,8 +63,8 @@ def test_loads_dev_config(monkeypatch: pytest.MonkeyPatch) -> None:
     assert cfg.general.name == "show-butler"
     assert cfg.home.city == "Houston"
     assert cfg.home.state == "Texas"
-    assert len(cfg.comedians) == 8
-    assert len(cfg.venues) == 6
+    assert len(cfg.comedians) == 9
+    assert len(cfg.venues) == 8
     assert cfg.budget.yearly_amount == 500.0
     assert cfg.agent_tasks.discovery.provider == "google"
 
@@ -108,7 +108,12 @@ def test_venue_home_market_flag(monkeypatch: pytest.MonkeyPatch) -> None:
     cfg = _load()
 
     home_venues = {v.name for v in cfg.venues if v.home_market}
-    assert home_venues == {"Houston Improv", "Punch Line Houston", "The Secret Group"}
+    assert home_venues == {
+        "Houston Improv",
+        "Punch Line Houston",
+        "The Secret Group",
+        "The Riot Comedy Club",
+    }
 
 
 # --- Caching contract ----------------------------------------------------------
